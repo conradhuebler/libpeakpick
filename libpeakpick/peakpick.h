@@ -27,7 +27,7 @@
 #include "spectrum.h"
 
 
-inline PeakPick::spectrum loadFormFile(const std::string &filename, double min = 0, double max = 0)
+inline PeakPick::spectrum loadFromFile(const std::string &filename, double min = 0, double max = 0)
 {
     Vector y;
     std::ifstream myfile;
@@ -43,7 +43,6 @@ inline PeakPick::spectrum loadFormFile(const std::string &filename, double min =
             rows++;
             if(line.find(ignore) != std::string::npos)
                 continue;
-            std::cout << line << " " << std::stod(line) << std::endl;
             entries.push_back(std::stod(line));
         }
         y = Vector::Map(&entries[0], rows); //[0], rows, 1);
