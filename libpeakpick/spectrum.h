@@ -110,7 +110,7 @@ public:
     
     inline double Mean() const { return m_mean; }
     inline double Max() const { return m_y(m_pos_max); }
-    inline double PosMax() const { return m_pos_max*double(m_y.size())/m_max+m_min; }
+    inline double PosMax() const { return X(m_pos_max);       } // m_pos_max*double(m_y.size())/m_max+m_min; }
     inline double Min() const { return m_y(m_pos_min); }
     inline double PosMin() const { return m_pos_min*double(m_y.size())/m_max+m_min; }
     inline double StdDev() const { return m_stddev; }
@@ -124,8 +124,18 @@ public:
             else 
                 return m_y(i); 
         }
+
+    inline double Y(double x) const
+    {
+        int i = (XMin()+x)*double(m_y.size())/(XMax()-XMin());
+        return Y(i);
+    }
         
-        
+    inline int XtoIndex(double x) const
+    {
+        return (XMin()+x)*double(m_y.size())/(XMax()-XMin());
+    }
+
     inline double XMin() const { return m_min; }
     inline double XMax() const { return m_max; }
     
@@ -135,7 +145,6 @@ public:
     
     inline int size() const { return m_y.size(); }
     
-    
     inline void setZero(int start, int end) 
     { 
         for(int i = start; i < end; ++i)
@@ -144,7 +153,12 @@ public:
     
     inline spectrum *operator=(const spectrum *other) { m_y = other->m_y; m_min = other->m_min;  m_max = other->m_max; Analyse(); return this; }
     inline spectrum &operator=(const spectrum &other) { m_y = other.m_y; m_min = other.m_min;  m_max = other.m_max; Analyse();  return *this; }
-
+    inline void print() const
+    {
+        int i = 0;
+        for(double min = XMin(); min < XMax(); min += (XMax()-XMin())/double(m_y.size()-1))
+            std::cout << i++ << " " << Y(i) << " " << min << " " << Y(min) << " " << XtoIndex(min) << std::endl;
+    }
 private:
     Vector m_y;
     double m_mean, m_stddev;

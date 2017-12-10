@@ -32,7 +32,7 @@ static double pi = 3.14159265;
 
 namespace PeakPick{
 
-    inline double SimpsonIntegrate(double lower, double upper, std::function<double(double, const Vector &)> function, const Vector &parameter, double prec = 1e-5)
+    inline double SimpsonIntegrate(double lower, double upper, std::function<double(double, const Vector &)> function, const Vector &parameter, double prec = 1e-3)
     {
         double integ = 0;
         double delta = prec;

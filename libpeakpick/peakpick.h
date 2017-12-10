@@ -34,6 +34,8 @@ inline PeakPick::spectrum loadFromFile(const std::string &filename, double min =
     std::string line;
     myfile.open (filename); 
     std::string ignore = "#";
+    std::string start = "#start = ";
+    std::string end = "#end = ";
     if (myfile.is_open())
     {
         std::vector<double> entries;
@@ -43,6 +45,7 @@ inline PeakPick::spectrum loadFromFile(const std::string &filename, double min =
             rows++;
             if(line.find(ignore) != std::string::npos)
                 continue;
+
             entries.push_back(std::stod(line));
         }
         y = Vector::Map(&entries[0], rows); //[0], rows, 1);

@@ -168,7 +168,7 @@ namespace PeakPick{
         result->sum_error = functor.m_sum_error;
         result->sum_squared = functor.m_sum_squared;
         result->integral = IntegrateGLFunction(parameter);
-        std::cout << parameter << std::endl;
+        // std::cout << parameter << std::endl;
         return result;
     }
 }

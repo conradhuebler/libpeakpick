@@ -1,9 +1,13 @@
+#include "libpeakpick/peakpick.h"
+#include "libpeakpick/spectrum.h"
+
+
 int FirstLorentzian()
 {
-    spec = loadFromFile("../samples/lorentzian_1", 0 , 10);
+    PeakPick::spectrum spec = loadFromFile("../samples/lorentzian_1", 0 , 10);
 
     std::cout << "Spectrum with " << spec.Mean() << " as mean. The maximal value is ("<< spec.PosMax() + 1 << "," << spec.Max() << ") and the minimal is ("<< spec.PosMin() + 1 << "," << spec.Min() << "). The stddev " << spec.StdDev() << ". Fine" << std::endl;
-    
+    // spec.print();
     
     
     return 1;
@@ -11,10 +15,11 @@ int FirstLorentzian()
 
 int SecondLorentzian()
 {
-    spec = loadFromFile("../samples/lorentzian_2", 0 , 10);
+    PeakPick::spectrum spec = loadFromFile("../samples/lorentzian_2", 0 , 10);
 
     std::cout << "Spectrum with " << spec.Mean() << " as mean. The maximal value is ("<< spec.PosMax() + 1 << "," << spec.Max() << ") and the minimal is ("<< spec.PosMin() + 1 << "," << spec.Min() << "). The stddev " << spec.StdDev() << ". Fine" << std::endl;
-    
+    // spec.print();
+
     
     
     return 1;
