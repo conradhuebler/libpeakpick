@@ -42,9 +42,11 @@ inline PeakPick::spectrum loadFromFile(const std::string &filename, double min =
         int rows(0);
         while ( getline (myfile,line) )
         {
-            rows++;
+            
             if(line.find(ignore) != std::string::npos)
                 continue;
+            
+            rows++;
 
             entries.push_back(std::stod(line));
         }

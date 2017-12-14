@@ -25,27 +25,50 @@
 
 int FirstStart() 
 {
-    
     Vector y(10);
-    
     y << 1,1,2,3,4,4,5,4,2,1;
+    std::cout << y << std::endl;
 
     PeakPick::spectrum spec(y, 1, 10);
+    std::cout << "Spectrum with " << spec.Mean() << " as mean. The maximal value is ("<< spec.PosMax()  << "," << spec.Max() << ") and the minimal is ("<< spec.PosMin()  << "," << spec.Min() << "). The stddev " << spec.StdDev() << ". Fine" << std::endl;
+    spec.print();
 
-    std::cout << "Spectrum with " << spec.Mean() << " as mean. The maximal value is ("<< spec.PosMax() + 1 << "," << spec.Max() << ") and the minimal is ("<< spec.PosMin() + 1 << "," << spec.Min() << "). The stddev " << spec.StdDev() << ". Fine" << std::endl;
-    std::cout << y << std::endl;
-        
+    spec = PeakPick::spectrum(y, 0, 9);
+    std::cout << "Spectrum with " << spec.Mean() << " as mean. The maximal value is ("<< spec.PosMax()  << "," << spec.Max() << ") and the minimal is ("<< spec.PosMin()  << "," << spec.Min() << "). The stddev " << spec.StdDev() << ". Fine" << std::endl;
+    spec.print();
+    
+        spec = PeakPick::spectrum(y, 0, 0.9);
+    std::cout << "Spectrum with " << spec.Mean() << " as mean. The maximal value is ("<< spec.PosMax()  << "," << spec.Max() << ") and the minimal is ("<< spec.PosMin()  << "," << spec.Min() << "). The stddev " << spec.StdDev() << ". Fine" << std::endl;
+    spec.print();
+    
+    spec = PeakPick::spectrum(y, 0, 0.09);
+    std::cout << "Spectrum with " << spec.Mean() << " as mean. The maximal value is ("<< spec.PosMax()  << "," << spec.Max() << ") and the minimal is ("<< spec.PosMin()  << "," << spec.Min() << "). The stddev " << spec.StdDev() << ". Fine" << std::endl;
+    spec.print();
+    
+        spec = PeakPick::spectrum(y, 0.01, 0.1);
+    std::cout << "Spectrum with " << spec.Mean() << " as mean. The maximal value is ("<< spec.PosMax()  << "," << spec.Max() << ") and the minimal is ("<< spec.PosMin()  << "," << spec.Min() << "). The stddev " << spec.StdDev() << ". Fine" << std::endl;
+    spec.print();
+    
+    return 0;
+}
+
+int Random()
+{
+
+    Vector y(10);
+    
+    PeakPick::spectrum spec(y, 1, 10);
     y = Eigen::VectorXd::Random(10);
 
     spec = PeakPick::spectrum(y,1,10);
 
-    std::cout << "Spectrum with " << spec.Mean() << " as mean. The maximal value is ("<< spec.PosMax() + 1 << "," << spec.Max() << ") and the minimal is ("<< spec.PosMin() + 1 << "," << spec.Min() << "). The stddev " << spec.StdDev() << ". Fine" << std::endl;
+    std::cout << "Spectrum with " << spec.Mean() << " as mean. The maximal value is ("<< spec.PosMax()  << "," << spec.Max() << ") and the minimal is ("<< spec.PosMin() << "," << spec.Min() << "). The stddev " << spec.StdDev() << ". Fine" << std::endl;
     std::cout << y << std::endl;
     
     y = Eigen::VectorXd::Random(10);
     spec = PeakPick::spectrum(y, -5, 5);
 
-    std::cout << "Spectrum with " << spec.Mean() << " as mean. The maximal value is ("<< spec.PosMax() + 1 << "," << spec.Max() << ") and the minimal is ("<< spec.PosMin() + 1 << "," << spec.Min() << "). The stddev " << spec.StdDev() << ". Fine" << std::endl;
+    std::cout << "Spectrum with " << spec.Mean() << " as mean. The maximal value is ("<< spec.PosMax() << "," << spec.Max() << ") and the minimal is ("<< spec.PosMin() << "," << spec.Min() << "). The stddev " << spec.StdDev() << ". Fine" << std::endl;
     std::cout << y << std::endl;
     
     
@@ -58,6 +81,9 @@ int main()
     if(FirstStart() == 0)
         std::cout << "libpeak basis working " << std::endl;
     
+    
+//     if(Random() == 0)
+//         std::cout << "some randomness " << std::endl;
     testLorentzien();
     
     return 0;

@@ -15,7 +15,7 @@ int FirstLorentzian()
     FitResult *result = PeakPick::LiberalDeconvulate(&spec, 0, spec.size(), 1, vector, 0);
     std::cout << result->parameter << std::endl;
     std::cout << "Integral " << result->integral << std::endl;
-    // spec.print();
+    spec.print();
 
     
     

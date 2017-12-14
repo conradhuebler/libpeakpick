@@ -110,13 +110,24 @@ public:
     
     inline double Mean() const { return m_mean; }
     inline double Max() const { return m_y(m_pos_max); }
-    inline double PosMax() const { return X(m_pos_max);       } // m_pos_max*double(m_y.size())/m_max+m_min; }
+    inline double PosMax() const { return X(m_pos_max);       } 
     inline double Min() const { return m_y(m_pos_min); }
-    inline double PosMin() const { return m_pos_min*double(m_y.size())/m_max+m_min; }
+    inline double PosMin() const { return X(m_pos_min); }
     inline double StdDev() const { return m_stddev; }
     inline double Threshold() const { return stddevThreshold(m_y, m_mean, m_stddev); }
     
-    inline double X(int i) const { return m_min+(i)*(m_max-m_min)/double(m_y.size()); }
+    inline double X(int i) const 
+    { 
+#ifdef X
+        if(i >= m_x.size() || i < 0)
+                return 0;
+        else
+            return m_x(i);
+#else
+        return XFromIndex(i); 
+#endif
+        
+    }
     inline double Y(int i) const 
         { 
             if(i >= m_y.size() || i < 0)
@@ -127,20 +138,34 @@ public:
 
     inline double Y(double x) const
     {
-        int i = (XMin()+x)*double(m_y.size())/(XMax()-XMin());
+        int i = XtoIndex(x);
         return Y(i);
     }
         
     inline int XtoIndex(double x) const
     {
-        return (XMin()+x)*double(m_y.size())/(XMax()-XMin());
+        double step = Step(); 
+        double diff = (x-XMin())/step;
+        double val =  diff + 1;
+//         std::cout  << x << " "<< step << " " << x - XMin() << " " << diff  << " hier:"  <<val << std::endl;    
+//         std::cout << "dort: " <<val << std::endl;
+        return val;
+    }
+    
+    inline double XFromIndex(int index) const
+    {
+//         std::cout << "index" <<index << " XMin" << XMin() << " iStep" << index*Step() << std::endl;
+            return XMin() + index*Step();
+    }
+    
+    inline double Step() const
+    {
+        return (XMax()-XMin())/double(m_y.size() - 1);
     }
 
     inline double XMin() const { return m_min; }
     inline double XMax() const { return m_max; }
-    
-    inline double PosOfPoint(double X) const { return (X-m_min)*m_y.size()/(m_max-m_min)/2; }
-        
+            
     inline void setY(int i, double value) { m_y(i) = value; }
     
     inline int size() const { return m_y.size(); }
@@ -153,14 +178,27 @@ public:
     
     inline spectrum *operator=(const spectrum *other) { m_y = other->m_y; m_min = other->m_min;  m_max = other->m_max; Analyse(); return this; }
     inline spectrum &operator=(const spectrum &other) { m_y = other.m_y; m_min = other.m_min;  m_max = other.m_max; Analyse();  return *this; }
+    
     inline void print() const
     {
+        std::cout << m_y << std::endl;
         int i = 0;
-        for(double min = XMin(); min < XMax(); min += (XMax()-XMin())/double(m_y.size()-1))
-            std::cout << i++ << " " << Y(i) << " " << min << " " << Y(min) << " " << XtoIndex(min) << std::endl;
+        double step = Step();
+        std::cout << "Step size " << step << " starting from " << XMin() << " to " << XMax() << " in " << size() << " steps." << std::endl;
+        for(double x = XMin(); x <= XMax(); x += step)
+        {
+           std::cout << i << " " << Y(i) << " (" << x << "," << Y(x) << ") " << XtoIndex(x) << std::endl;
+//            std::cout << "l" << x << " " << XtoIndex(x) << std::endl;
+           ++i;
+        }
+           
+
     }
 private:
     Vector m_y;
+#ifdef X
+    Vector m_x;
+#endif
     double m_mean, m_stddev;
     double m_min, m_max;
     int m_pos_min, m_pos_max;
