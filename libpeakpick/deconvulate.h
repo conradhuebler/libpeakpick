@@ -33,17 +33,17 @@
 
 typedef Eigen::VectorXd Vector;
 
-
-struct FitResult
-{
-    Vector parameter;
-    double sum_error = 0;
-    double sum_squared = 0;
-    double integral = 0;
-    
-};
-
 namespace PeakPick{
+    
+    struct FitResult
+    {
+        Vector parameter;
+        double sum_error = 0;
+        double sum_squared = 0;
+        double integral = 0;
+    };
+    
+    class GLFit;
 
     template<typename _Scalar, int NX = Eigen::Dynamic, int NY = Eigen::Dynamic>
     
@@ -73,7 +73,9 @@ namespace PeakPick{
         {
 
         }
+        
         inline ~LiberalGLFit() { }
+        
         inline int operator()(Eigen::VectorXd parameter, Eigen::VectorXd &fvec) const
         {
             int j = 0;
@@ -83,7 +85,21 @@ namespace PeakPick{
                 if(m_lock(i) == 1)
                     parameter(i) = m_original(i);
 
+                if((m_lock(i) == 2) && (parameter(i) < 0))
+                {
+                    err += -1*parameter(i)*1e10;
+                    parameter(i) = parameter(i)*-1;
+                    std::cout << i << " adding error for scaling " << parameter(i) << std::endl;
+                }
+
+                if((m_lock(i) == 3) && (parameter(i) < 0))
+                {
+                    err += 0.1;
+                    std::cout << i << " adding error" << std::endl;
+                }
             }
+            
+            err /= double(fvec.size());
             for(int i = start; i <= end; ++i)
             {
                 double x = spec->X(i);
@@ -116,60 +132,146 @@ namespace PeakPick{
         Vector m_original, m_lock;
         inline int inputs() const { return no_parameter; }
         inline int values() const { return no_points; }
+        
+        PeakPick::GLFit *m_glfit;
     };
 
     struct LiberalGLFitNumericalDiff : Eigen::NumericalDiff<LiberalGLFit> {};
     
-    FitResult* LiberalDeconvulate(const spectrum *spec, double start, double end, double ratio, const Vector &guess, int fittype)
+    class GLFit 
     {
-        std::cout << "Having guess size: " << guess.size() << std::endl;
-        LiberalGLFit functor(6*guess.size(), end-start+1);
-        functor.start = start;
-        functor.end = end;
-        functor.spec = spec;
-        Vector parameter(6*guess.size());
-        Vector lock(6*guess.size());
-        for(int i = 0; i < guess.size(); ++i)
-        {
-            parameter(0+i*6) = guess(i);
-            if(fittype == Conservative)
-                lock(0+i*6) = 1;
-            else
-                lock(0+i*6) = 0;
-
-            parameter(1+i*6) = 1;
-            lock(1+i*6) = 0;
-
-            parameter(2+i*6) = 10;
-            lock(2+i*6) = 0;
-
-            parameter(3+i*6) = 1/double(50);
-            lock(3+i*6) = 0;
-
-            parameter(4+i*6) = 1/double(30);
-            lock(4+i*6) = 0;
-
-            parameter(5+i*6) = ratio;
-            if(fittype == Innovative)
-                lock(5+i*6) = 0;
-            else
-                lock(5+i*6) = 1;
+        
+    public:
+        inline GLFit(const spectrum *spec, double start, double end, double ratio = 0.9, int fittype = 1)  : m_spec(spec), m_start(start), m_end(end), m_ratio(ratio), m_fittype(fittype) 
+        { 
+            
         }
+        inline ~GLFit() { };
+        
+        inline void setFitType(int fittype) { m_fittype = fittype; }
+        inline void setGLRatio(double ratio) { m_ratio = ratio; }
+        
+        inline void setParameter(const Vector &parameter) { m_parameter = parameter; }
+        
+        inline void setGuess(const Vector &guess) 
+        { 
+            Vector parameter(6*guess.size());
+            Vector lock(6*guess.size());
+            for(int i = 0; i < guess.size(); ++i)
+            {
+                parameter(0+i*6) = guess(i);
+                if(m_fittype == Conservative)
+                    lock(0+i*6) = 1;
+                else
+                    lock(0+i*6) = 0;
 
-        functor.m_original = parameter;
-        functor.m_lock = lock;
-        Eigen::NumericalDiff<LiberalGLFit> numDiff(functor);
-        Eigen::LevenbergMarquardt<Eigen::NumericalDiff<LiberalGLFit> > lm(numDiff);
-        Eigen::LevenbergMarquardtSpace::Status status = lm.minimizeInit(parameter);
-        lm.minimize(parameter);
-        functor(parameter);
-        FitResult *result = new FitResult;
-        result->parameter = parameter;
-        result->sum_error = functor.m_sum_error;
-        result->sum_squared = functor.m_sum_squared;
-        result->integral = IntegrateGLFunction(parameter);
-        // std::cout << parameter << std::endl;
-        return result;
-    }
+                parameter(1+i*6) = 1;
+                lock(1+i*6) = 3;
+
+                parameter(2+i*6) = 10;
+                lock(2+i*6) = 3;
+
+                parameter(3+i*6) = 1/double(50);
+                lock(3+i*6) = 3;
+
+                parameter(4+i*6) = 1/double(30);
+                lock(4+i*6) = 2;
+
+                parameter(5+i*6) = m_ratio;
+                if(m_fittype == Innovative)
+                    lock(5+i*6) = 0;
+                else
+                    lock(5+i*6) = 1;
+            }
+            m_parameter = parameter;
+            m_guess = guess;
+            m_lock = lock;
+        }
+        
+        inline void UpdateParamater(const Vector &parameter)
+        {
+            for(int i = 0; i < m_parameter.size(); ++i)
+            {
+                    if(m_lock(i) == 0)
+                        m_parameter(i) = parameter(i);
+            }
+        }
+        
+        inline FitResult* Deconvulate()
+        {
+            LiberalGLFit glfit(6*m_guess.size(), m_end-m_start+1);
+            
+            glfit.start = m_start;
+            glfit.end = m_end;
+            glfit.spec = m_spec;
+            glfit.m_glfit = this;
+            
+            glfit.m_original = m_parameter;
+            glfit.m_lock = m_lock;
+            
+            Eigen::NumericalDiff<LiberalGLFit> numDiff(glfit);
+            Eigen::LevenbergMarquardt<Eigen::NumericalDiff<LiberalGLFit> > lm(numDiff);
+            Eigen::LevenbergMarquardtSpace::Status status = lm.minimizeInit(m_parameter);
+            
+            lm.minimize(m_parameter);
+            //glfit(m_parameter);
+            
+            FitResult *result = new FitResult;
+            result->parameter = m_parameter;
+            result->sum_error = glfit.m_sum_error;
+            result->sum_squared = glfit.m_sum_squared;
+            result->integral = IntegrateGLFunction(m_parameter);
+            // std::cout << parameter << std::endl;
+            return result;
+        }
+        
+    private:
+        inline void releaseLock()
+        {
+            Vector lock(m_parameter.size());
+            for(int i = 0; i < m_parameter.size(); ++i)
+                lock(i) = 0;
+            m_lock = lock;
+        }
+        
+        inline void createLock()
+        {
+            Vector lock(m_parameter.size());
+            for(int i = 0; i < m_parameter.size(); ++i)
+                lock(i) = 1;
+            m_lock = lock;
+        }
+        
+        inline void Lock()
+        {
+            Vector lock(m_parameter.size());
+            for(int i = 0; i < m_parameter.size()/6; ++i)
+            {
+                if(m_fittype == Conservative)
+                    lock(0+i*6) = 1;
+                else
+                    lock(0+i*6) = 0;
+
+                lock(1+i*6) = 3;
+
+                lock(2+i*6) = 3;
+
+                lock(3+i*6) = 3;
+
+                lock(4+i*6) = 2;
+
+                if(m_fittype == Innovative)
+                    lock(5+i*6) = 0;
+                else
+                    lock(5+i*6) = 1;
+            }
+            m_lock = lock;
+        }
+        
+        Vector m_parameter, m_guess, m_lock;
+        int m_fittype;
+        const spectrum *m_spec;
+        double m_start, m_end, m_ratio;
+    };
 }
 

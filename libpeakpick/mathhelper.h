@@ -179,6 +179,21 @@ namespace PeakPick{
         return signal;
     }
 
+    
+    inline double SignalSingle(double x, const Vector &parameter, int function)
+    {
+        double signal = 0;
+        if(function >= parameter.size()/6)
+            return 0;
+        
+        double gaussian = Gaussian(x, parameter(1+function*6), parameter(0+function*6), parameter(2+function*6));
+        double lorentzian = Lorentzian(x, parameter(0+function*6), parameter(3+function*6));
+        signal += ((1-parameter(5+function*6))*gaussian + parameter(5+function*6)*lorentzian)*parameter(4+function*6);
+        
+        return signal;
+    }
+    
+    
     inline double IntegrateGLFunction(const Vector &parameter)
     {
         double integ = 0;
