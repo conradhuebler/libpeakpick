@@ -14,7 +14,7 @@ int FirstLorentzian()
     vector(0) =  5 ;
     PeakPick::GLFit fit(&spec, 0, spec.size());
     fit.setGuess(vector);
-    PeakPick::FitResult *result = fit.Deconvulate();
+    PeakPick::FitResult *result = PeakPick::Deconvulate(&fit);
     //FitResult *result = PeakPick::LiberalDeconvulate(&spec, 0, spec.size(), 1, vector, 0);
     std::cout << result->parameter << std::endl;
     std::cout << "Integral " << result->integral << std::endl;
