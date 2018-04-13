@@ -19,42 +19,38 @@
 
 #pragma once
 
-#include <iostream>
 #include <fstream>
+#include <iostream>
 
-#include "math.h"
 #include "analyse.h"
+#include "math.h"
 #include "spectrum.h"
 
-
-inline PeakPick::spectrum loadFromFile(const std::string &filename, double min = 0, double max = 0)
+inline PeakPick::spectrum loadFromFile(const std::string& filename, double min = 0, double max = 0)
 {
     Vector y;
     std::ifstream myfile;
     std::string line;
-    myfile.open (filename); 
+    myfile.open(filename);
     std::string ignore = "#";
     std::string start = "#start = ";
     std::string end = "#end = ";
-    if (myfile.is_open())
-    {
+    if (myfile.is_open()) {
         std::vector<double> entries;
         int rows(0);
-        while ( getline (myfile,line) )
-        {
-            
-            if(line.find(ignore) != std::string::npos)
+        while (getline(myfile, line)) {
+
+            if (line.find(ignore) != std::string::npos)
                 continue;
-            
+
             rows++;
 
             entries.push_back(std::stod(line));
         }
         y = Vector::Map(&entries[0], rows); //[0], rows, 1);
         myfile.close();
-    }
-    else 
-        std::cout << "Unable to open file" << std::endl;; 
-    return PeakPick::spectrum(y,min,max); 
+    } else
+        std::cout << "Unable to open file" << std::endl;
+    ;
+    return PeakPick::spectrum(y, min, max);
 }
-

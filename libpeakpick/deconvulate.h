@@ -28,95 +28,97 @@
 #include <vector>
 
 #include "analyse.h"
-#include "spectrum.h"
-#include "mathhelper.h"
 #include "glfit.h"
+#include "mathhelper.h"
+#include "spectrum.h"
 
 typedef Eigen::VectorXd Vector;
 
-namespace PeakPick{
-    
-    struct FitResult
-    {
-        Vector parameter;
-        double sum_error = 0;
-        double sum_squared = 0;
-        double integral = 0;
+namespace PeakPick {
+
+struct FitResult {
+    Vector parameter;
+    double sum_error = 0;
+    double sum_squared = 0;
+    double integral = 0;
+};
+
+template <typename _Scalar, int NX = Eigen::Dynamic, int NY = Eigen::Dynamic>
+
+struct GaussianLorentzian {
+    typedef _Scalar Scalar;
+    enum {
+        InputsAtCompileTime = NX,
+        ValuesAtCompileTime = NY
     };
-    
-    template<typename _Scalar, int NX = Eigen::Dynamic, int NY = Eigen::Dynamic>
-    
-    struct GaussianLorentzian
+    typedef Eigen::Matrix<Scalar, InputsAtCompileTime, 1> InputType;
+    typedef Eigen::Matrix<Scalar, ValuesAtCompileTime, 1> ValueType;
+    typedef Eigen::Matrix<Scalar, ValuesAtCompileTime, InputsAtCompileTime> JacobianType;
+
+    int m_inputs, m_values;
+
+    inline GaussianLorentzian(int inputs, int values)
+        : m_inputs(inputs)
+        , m_values(values)
     {
-        typedef _Scalar Scalar;
-        enum {
-            InputsAtCompileTime = NX,
-            ValuesAtCompileTime = NY
-        };
-        typedef Eigen::Matrix<Scalar,InputsAtCompileTime,1> InputType;
-        typedef Eigen::Matrix<Scalar,ValuesAtCompileTime,1> ValueType;
-        typedef Eigen::Matrix<Scalar,ValuesAtCompileTime,InputsAtCompileTime> JacobianType;
-        
-        int m_inputs, m_values;
-        
-        inline GaussianLorentzian(int inputs, int values) : m_inputs(inputs), m_values(values) {}
-        
-        int inputs() const { return m_inputs; }
-        int values() const { return m_values; }
-        
-    };
-    
-    struct LiberalGLFit : GaussianLorentzian<double>
+    }
+
+    int inputs() const { return m_inputs; }
+    int values() const { return m_values; }
+};
+
+struct LiberalGLFit : GaussianLorentzian<double> {
+    inline LiberalGLFit(GLFit* glfit)
+        : m_glfit(glfit)
+        , GaussianLorentzian(glfit->ParamSize(), glfit->PointsSize())
+        , no_parameter(glfit->ParamSize())
+        , no_points(glfit->PointsSize())
+        , start(glfit->Start())
+        , end(glfit->End())
     {
-        inline LiberalGLFit(GLFit *glfit) : m_glfit(glfit), GaussianLorentzian(glfit->ParamSize(), glfit->PointsSize()), no_parameter(glfit->ParamSize()),  no_points(glfit->PointsSize()), start(glfit->Start()), end(glfit->End())
-        {
-            
+    }
+
+    inline ~LiberalGLFit() {}
+
+    inline int operator()(const Eigen::VectorXd parameter, Eigen::VectorXd& fvec) const
+    {
+        int j = 0;
+        m_glfit->UpdateParamater(parameter);
+        for (int i = start; i <= end; ++i) {
+            fvec(j) = (*m_glfit)(i);
+            ++j;
         }
-        
-        inline ~LiberalGLFit() { }
-        
-        inline int operator()(const Eigen::VectorXd parameter, Eigen::VectorXd &fvec) const
-        {
-            int j = 0;
-            m_glfit->UpdateParamater(parameter);
-            for(int i = start; i <= end; ++i)
-            {
-                 fvec(j) =  (*m_glfit)(i); 
-                ++j;
-            }
-            return 0;
-        }
+        return 0;
+    }
 
-        int no_parameter, no_points, start, end;
-        inline int inputs() const { return no_parameter; }
-        inline int values() const { return no_points; }
-        
-        PeakPick::GLFit *m_glfit;
-    };
+    int no_parameter, no_points, start, end;
+    inline int inputs() const { return no_parameter; }
+    inline int values() const { return no_points; }
 
-    struct LiberalGLFitNumericalDiff : Eigen::NumericalDiff<LiberalGLFit> {};
+    PeakPick::GLFit* m_glfit;
+};
 
-    
-    inline FitResult* Deconvulate(GLFit *glfit)
-        {
-            LiberalGLFit fit(glfit);
-            Vector parameter = glfit->Parameter();
-            
-            Eigen::NumericalDiff<LiberalGLFit> numDiff(fit);
-            Eigen::LevenbergMarquardt<Eigen::NumericalDiff<LiberalGLFit> > lm(numDiff);
-            Eigen::LevenbergMarquardtSpace::Status status = lm.minimizeInit(parameter);
-            
-            lm.minimize(parameter);
-            
-            FitResult *result = new FitResult;
-            result->parameter = parameter;
-            result->sum_error = glfit->SumError();
-            result->sum_squared = glfit->SumSquared();
-            glfit->Print();
-            result->integral = IntegrateGLFunction(parameter);
+struct LiberalGLFitNumericalDiff : Eigen::NumericalDiff<LiberalGLFit> {
+};
 
-            return result;
-        }
-        
+inline FitResult* Deconvulate(GLFit* glfit)
+{
+    LiberalGLFit fit(glfit);
+    Vector parameter = glfit->Parameter();
+
+    Eigen::NumericalDiff<LiberalGLFit> numDiff(fit);
+    Eigen::LevenbergMarquardt<Eigen::NumericalDiff<LiberalGLFit>> lm(numDiff);
+    Eigen::LevenbergMarquardtSpace::Status status = lm.minimizeInit(parameter);
+
+    lm.minimize(parameter);
+
+    FitResult* result = new FitResult;
+    result->parameter = parameter;
+    result->sum_error = glfit->SumError();
+    result->sum_squared = glfit->SumSquared();
+    glfit->Print();
+    result->integral = IntegrateGLFunction(parameter);
+
+    return result;
 }
-
+}
