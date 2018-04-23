@@ -153,7 +153,7 @@ inline std::vector<Peak> PickPeaks(const spectrum* spec, double threshold, doubl
     return peaks;
 }
 
-inline double IntegrateNumerical(const spectrum* spec, int start, int end)
+inline double IntegrateNumerical(const spectrum* spec, int start, int end, double offset = 0)
 {
     if (spec->size() < (end - 1) || spec->size() < start)
         return 0;
@@ -162,8 +162,8 @@ inline double IntegrateNumerical(const spectrum* spec, int start, int end)
     for (int i = start; i < end - 1; ++i) {
         double x_0 = spec->X(i);
         double x_1 = spec->X(i + 1);
-        double y_0 = spec->Y(i);
-        double y_1 = spec->Y(i + 1);
+        double y_0 = spec->Y(i) - offset;
+        double y_1 = spec->Y(i + 1) - offset;
         if (std::abs(y_0) < std::abs(y_1))
             integ += (x_1 - x_0) * y_0 + (x_1 - x_0) * (y_1 - y_0) / 2.0;
         else
@@ -173,9 +173,9 @@ inline double IntegrateNumerical(const spectrum* spec, int start, int end)
     return integ;
 }
 
-inline double IntegrateNumerical(const spectrum* spec, Peak& peak)
+inline double IntegrateNumerical(const spectrum* spec, Peak& peak, double offset = 0)
 {
-    double integ = IntegrateNumerical(spec, peak.start, peak.end);
+    double integ = IntegrateNumerical(spec, peak.start, peak.end, offset);
     peak.integ_num = integ;
     return integ;
 }
