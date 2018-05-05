@@ -173,9 +173,38 @@ inline double IntegrateNumerical(const spectrum* spec, int start, int end, doubl
     return integ;
 }
 
+inline double IntegrateNumerical(const spectrum* spec, int start, int end, const Vector coeff)
+{
+    if (spec->size() < (end - 1) || spec->size() < start)
+        return 0;
+
+    double integ = 0;
+    for (int i = start; i < end - 1; ++i) {
+        double x_0 = spec->X(i);
+        double x_1 = spec->X(i + 1);
+        qreal offset_0 = Polynomial(x_0, coeff);
+        qreal offset_1 = Polynomial(x_1, coeff);
+        double y_0 = spec->Y(i) - offset_0;
+        double y_1 = spec->Y(i + 1) - offset_1;
+        if (std::abs(y_0) < std::abs(y_1))
+            integ += (x_1 - x_0) * y_0 + (x_1 - x_0) * (y_1 - y_0) / 2.0;
+        else
+            integ += (x_1 - x_0) * y_1 + (x_1 - x_0) * (y_0 - y_1) / 2.0;
+    }
+
+    return integ;
+}
+
 inline double IntegrateNumerical(const spectrum* spec, Peak& peak, double offset = 0)
 {
     double integ = IntegrateNumerical(spec, peak.start, peak.end, offset);
+    peak.integ_num = integ;
+    return integ;
+}
+
+inline double IntegrateNumerical(const spectrum* spec, Peak& peak, const Vector& coeff)
+{
+    double integ = IntegrateNumerical(spec, peak.start, peak.end, coeff);
     peak.integ_num = integ;
     return integ;
 }

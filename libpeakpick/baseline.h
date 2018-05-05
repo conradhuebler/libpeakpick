@@ -57,11 +57,11 @@ struct BaseLineFit {
 };
 
 struct BaseLineFitFunction : BaseLineFit<double> {
-    inline BaseLineFitFunction(const Vectort& x, const Vector& y, int size)
+    inline BaseLineFitFunction(const Vector& x, const Vector& y, int size)
         : m_x(x)
         , m_y(y)
         , BaseLineFit(x.size(), size)
-        , no_parameter(size())
+        , no_parameter(size)
         , no_points(x.size())
     {
     }
@@ -71,7 +71,7 @@ struct BaseLineFitFunction : BaseLineFit<double> {
     inline int operator()(const Eigen::VectorXd parameter, Eigen::VectorXd& fvec) const
     {
         for (int i = 0; i < m_x.size(); ++i)
-            fvec(j) = m_y(i) - Polynomial(m_x(i), parameter);
+            fvec(i) = m_y(i) - Polynomial(m_x(i), parameter);
         return 0;
     }
 
@@ -84,15 +84,15 @@ struct BaseLineFitFunction : BaseLineFit<double> {
 struct BaseLineFitFunctionDiff : Eigen::NumericalDiff<BaseLineFitFunction> {
 };
 
-inline Vector FitBaseLine(const Vectort& x, const Vector& y, int size)
+inline Vector FitBaseLine(const Vector& x, const Vector& y, int size)
 {
     BaseLineFitFunction fit(x, y, size);
     Vector parameter(size);
     for (int i = 0; i < size; ++i)
         parameter(i) = 1;
 
-    Eigen::NumericalDiff<LiberalGLFit> numDiff(fit);
-    Eigen::LevenbergMarquardt<Eigen::NumericalDiff<LiberalGLFit>> lm(numDiff);
+    Eigen::NumericalDiff<BaseLineFitFunction> numDiff(fit);
+    Eigen::LevenbergMarquardt<Eigen::NumericalDiff<BaseLineFitFunction>> lm(numDiff);
     Eigen::LevenbergMarquardtSpace::Status status = lm.minimizeInit(parameter);
 
     lm.minimize(parameter);
@@ -105,10 +105,14 @@ public:
     inline BaseLine(const spectrum* spec)
         : m_spec(spec)
         , m_degree(1)
+        , m_lower(0)
+        , m_upper(0)
     {
     }
 
     inline void setDegree(int degree) { m_degree = degree; }
+    inline void setLower(double lower) { m_lower = lower; }
+    inline void setUpper(double upper) { m_upper = upper; }
 
     inline Vector Fit()
     {
@@ -142,9 +146,13 @@ private:
         y = Vector::Map(&v_y[0], v_y.size());
     }
 
-    inline bool ok(double y) { return true; }
+    inline bool ok(double y)
+    {
+        return (m_lower <= y && y <= m_upper) || (m_lower == m_upper);
+    }
 
     const spectrum* m_spec;
     int m_degree;
+    double m_lower, m_upper;
 };
 }

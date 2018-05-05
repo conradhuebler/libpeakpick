@@ -33,10 +33,10 @@ namespace PeakPick {
 
 struct LinearRegression {
     Vector y, x, y_head;
-    qreal m = 0;
-    qreal n = 0;
-    qreal R = 0;
-    qreal sum_err = 0;
+    double m = 0;
+    double n = 0;
+    double R = 0;
+    double sum_err = 0;
 };
 
 inline double SimpsonIntegrate(double lower, double upper, std::function<double(double, const Vector&)> function, const Vector& parameter, double prec = 1e-3)
@@ -212,6 +212,7 @@ inline double Polynomial(double x, const Vector& coeff)
     double y = 0;
     for (int i = 0; i < coeff.size(); ++i)
         y += pow(x, i) * coeff(i);
+
     return y;
 }
 
@@ -222,7 +223,7 @@ inline LinearRegression LeastSquares(const Vector& x, const Vector& y)
     if (x.size() != y.size())
         return regression;
     // http://www.bragitoff.com/2015/09/c-program-to-linear-fit-the-data-using-least-squares-method/ //
-    qreal xsum = 0, x2sum = 0, ysum = 0, xysum = 0; //variables for sums/sigma of xi,yi,xi^2,xiyi etc
+    double xsum = 0, x2sum = 0, ysum = 0, xysum = 0; //variables for sums/sigma of xi,yi,xi^2,xiyi etc
     int n = x.size();
     for (int i = 0; i < n; ++i) {
         xsum += x[i]; //calculate sigma(xi)
@@ -232,21 +233,23 @@ inline LinearRegression LeastSquares(const Vector& x, const Vector& y)
     }
     regression.m = (n * xysum - xsum * ysum) / (n * x2sum - xsum * xsum); //calculate slope
     regression.n = (x2sum * ysum - xsum * xysum) / (x2sum * n - xsum * xsum); //calculate intercept
-    qreal mean_x = xsum / double(n);
-    qreal mean_y = ysum / double(n);
-    qreal x_ = 0;
-    qreal y_ = 0;
-    qreal xy_ = 0;
+    double mean_x = xsum / double(n);
+    double mean_y = ysum / double(n);
+    double x_ = 0;
+    double y_ = 0;
+    double xy_ = 0;
     regression.x = x;
     regression.y = y;
+    std::vector<double> v_y_head;
     for (int i = 0; i < n; ++i) {
-        qreal y_head = regression.m * x[i] + regression.n;
-        regression.y_head << y_head;
+        double y_head = regression.m * x[i] + regression.n;
+        v_y_head.push_back(y_head); // regression.y_head << y_head;
         regression.sum_err += (y_head - y[i]) * (y_head - y[i]);
         x_ += (x[i] - mean_x) * (x[i] - mean_x);
         y_ += (y[i] - mean_y) * (y[i] - mean_y);
         xy_ += (x[i] - mean_x) * (y[i] - mean_y);
     }
+    regression.y_head = Vector::Map(&v_y_head[0], n);
     regression.R = (xy_ / sqrt(x_ * y_)) * (xy_ / sqrt(x_ * y_));
 
     return regression;
