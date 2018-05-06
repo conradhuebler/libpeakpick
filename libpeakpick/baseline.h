@@ -27,6 +27,7 @@
 #include <iostream>
 #include <vector>
 
+#include "analyse.h"
 #include "mathhelper.h"
 #include "spectrum.h"
 
@@ -118,7 +119,12 @@ public:
     {
         Vector vector(m_degree);
         Vector x, y;
-        ApplyFilter(x, y);
+        if (!m_peak_list)
+            ApplyFilter(x, y);
+        else
+            FromPeaks(x, y);
+
+        std::cout << x << y << std::endl;
 
         if (m_degree >= 3) {
             vector = FitBaseLine(x, y, m_degree);
@@ -130,6 +136,16 @@ public:
         }
 
         return vector;
+    }
+    inline void setPeaks(std::vector<Peak>* peaks)
+    {
+        m_peaks = peaks;
+        m_peak_list = true;
+    }
+    inline void clearPeaks()
+    {
+        m_peaks->clear();
+        m_peak_list = false;
     }
 
 private:
@@ -146,6 +162,21 @@ private:
         y = Vector::Map(&v_y[0], v_y.size());
     }
 
+    void FromPeaks(Vector& x, Vector& y)
+    {
+        std::vector<double> v_x, v_y;
+        for (int i = 1; i < m_peaks->size() - 1; ++i) {
+            {
+                v_x.push_back(m_spec->X((*m_peaks)[i].start));
+                //v_x.push_back(m_spec->X((*m_peaks)[i].end));
+                v_y.push_back(m_spec->Y((*m_peaks)[i].start));
+                //v_y.push_back(m_spec->Y((*m_peaks)[i].end));
+            }
+        }
+        x = Vector::Map(&v_x[0], v_x.size());
+        y = Vector::Map(&v_y[0], v_y.size());
+    }
+
     inline bool ok(double y)
     {
         return (m_lower <= y && y <= m_upper) || (m_lower == m_upper);
@@ -154,5 +185,7 @@ private:
     const spectrum* m_spec;
     int m_degree;
     double m_lower, m_upper;
+    bool m_peak_list = false;
+    std::vector<Peak>* m_peaks;
 };
 }
