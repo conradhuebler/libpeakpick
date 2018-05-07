@@ -85,12 +85,13 @@ struct BaseLineFitFunction : BaseLineFit<double> {
 struct BaseLineFitFunctionDiff : Eigen::NumericalDiff<BaseLineFitFunction> {
 };
 
-inline Vector FitBaseLine(const Vector& x, const Vector& y, int size)
+inline Vector FitBaseLine(const Vector& x, const Vector& y, int size, double mean)
 {
     BaseLineFitFunction fit(x, y, size);
     Vector parameter(size);
-    for (int i = 0; i < size; ++i)
-        parameter(i) = 1;
+    parameter(0) = mean;
+    for (int i = 1; i < size; ++i)
+        parameter(i) = pow(10, -1 * (size));
 
     Eigen::NumericalDiff<BaseLineFitFunction> numDiff(fit);
     Eigen::LevenbergMarquardt<Eigen::NumericalDiff<BaseLineFitFunction>> lm(numDiff);
@@ -124,10 +125,10 @@ public:
         else
             FromPeaks(x, y);
 
-        std::cout << x << y << std::endl;
+        // std::cout << x << y << std::endl;
 
         if (m_degree >= 3) {
-            vector = FitBaseLine(x, y, m_degree);
+            vector = FitBaseLine(x, y, m_degree, m_spec->Mean());
         } else if (m_degree == 2) {
 
             LinearRegression regression = LeastSquares(x, y);
@@ -168,9 +169,9 @@ private:
         for (int i = 1; i < m_peaks->size() - 1; ++i) {
             {
                 v_x.push_back(m_spec->X((*m_peaks)[i].start));
-                //v_x.push_back(m_spec->X((*m_peaks)[i].end));
+                v_x.push_back(m_spec->X((*m_peaks)[i].end));
                 v_y.push_back(m_spec->Y((*m_peaks)[i].start));
-                //v_y.push_back(m_spec->Y((*m_peaks)[i].end));
+                v_y.push_back(m_spec->Y((*m_peaks)[i].end));
             }
         }
         x = Vector::Map(&v_x[0], v_x.size());
