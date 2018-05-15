@@ -91,13 +91,22 @@ inline Vector FitBaseLine(const Vector& x, const Vector& y, int size, double mea
     Vector parameter(size);
     parameter(0) = mean;
     for (int i = 1; i < size; ++i)
-        parameter(i) = pow(10, -1 * (size));
+        parameter(i) = pow(10, -2 * (size));
 
     Eigen::NumericalDiff<BaseLineFitFunction> numDiff(fit);
     Eigen::LevenbergMarquardt<Eigen::NumericalDiff<BaseLineFitFunction>> lm(numDiff);
     Eigen::LevenbergMarquardtSpace::Status status = lm.minimizeInit(parameter);
 
-    lm.minimize(parameter);
+    qreal diff = 1;
+
+    for (int iter = 0; iter < 100 && diff > 1e-5; ++iter) {
+
+        Vector param = parameter;
+        status = lm.minimizeOneStep(parameter);
+        for (int i = 0; i < size; ++i)
+            diff += (parameter(i) - param(i)) * (parameter(i) - param(i));
+        diff = sqrt(diff);
+    }
 
     return parameter;
 }
@@ -106,30 +115,28 @@ class BaseLine {
 public:
     inline BaseLine(const spectrum* spec)
         : m_spec(spec)
-        , m_degree(1)
+        , m_no_coeff(2)
         , m_lower(0)
         , m_upper(0)
     {
     }
 
-    inline void setDegree(int degree) { m_degree = degree; }
+    inline void setNoCoeffs(int no_coeff) { m_no_coeff = no_coeff; }
     inline void setLower(double lower) { m_lower = lower; }
     inline void setUpper(double upper) { m_upper = upper; }
 
     inline Vector Fit()
     {
-        Vector vector(m_degree);
+        Vector vector(m_no_coeff);
         Vector x, y;
         if (!m_peak_list)
             ApplyFilter(x, y);
         else
             FromPeaks(x, y);
 
-        // std::cout << x << y << std::endl;
-
-        if (m_degree >= 3) {
-            vector = FitBaseLine(x, y, m_degree, m_spec->Mean());
-        } else if (m_degree == 2) {
+        if (m_no_coeff >= 3) {
+            vector = FitBaseLine(x, y, m_no_coeff, m_spec->Mean());
+        } else if (m_no_coeff == 2) {
 
             LinearRegression regression = LeastSquares(x, y);
             vector(0) = regression.n;
@@ -184,7 +191,7 @@ private:
     }
 
     const spectrum* m_spec;
-    int m_degree;
+    int m_no_coeff;
     double m_lower, m_upper;
     bool m_peak_list = false;
     std::vector<Peak>* m_peaks;
