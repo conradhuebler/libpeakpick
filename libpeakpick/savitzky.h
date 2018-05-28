@@ -154,6 +154,7 @@ inline double SavitzkyGolayCoefficient(int points, int position)
             coeff = -51;
         else
             coeff = -136;
+        break;
 
     case 10:
         if (position == 0)
