@@ -121,18 +121,35 @@ public:
     {
     }
 
+    enum Type {
+        Automatic = 0,
+        StartEnd = 1
+    };
+
     inline void setNoCoeffs(int no_coeff) { m_no_coeff = no_coeff; }
     inline void setLower(double lower) { m_lower = lower; }
     inline void setUpper(double upper) { m_upper = upper; }
 
-    inline Vector Fit()
+    inline Vector Fit(Type type = Automatic)
     {
         Vector vector(m_no_coeff);
         Vector x, y;
-        if (!m_peak_list)
-            ApplyFilter(x, y);
-        else
-            FromPeaks(x, y);
+        if (type == Automatic) {
+            if (!m_peak_list)
+                ApplyFilter(x, y);
+            else
+                FromPeaks(x, y);
+        } else if (type == StartEnd) {
+            std::vector<double> t_x, t_y;
+            t_x.push_back(0);
+            t_y.push_back(m_spec->Y(0));
+            t_x.push_back(m_spec->size());
+            t_y.push_back(m_spec->LastY());
+            x = Vector::Map(&t_x[0], 2);
+            y = Vector::Map(&t_y[0], 2);
+            m_no_coeff = 2;
+        } else
+            throw - 1;
 
         if (m_no_coeff >= 3) {
             vector = FitBaseLine(x, y, m_no_coeff, m_spec->Mean());
@@ -142,7 +159,7 @@ public:
             vector(0) = regression.n;
             vector(1) = regression.m;
         }
-
+        m_baseline = vector;
         return vector;
     }
     inline void setPeaks(std::vector<Peak>* peaks)
@@ -154,6 +171,18 @@ public:
     {
         m_peaks->clear();
         m_peak_list = false;
+    }
+
+    inline spectrum Corrected() const
+    {
+
+        std::vector<double> y;
+        for (int i = 0; i < m_spec->size(); ++i) {
+            y.push_back(m_spec->Y(i) - Polynomial(m_spec->X(i), m_baseline));
+        }
+        Vector vec = Vector::Map(&y[0], y.size());
+        spectrum spec(vec, m_spec->X(0), m_spec->X(m_spec->size() - 1));
+        return spec;
     }
 
 private:
@@ -195,5 +224,6 @@ private:
     double m_lower, m_upper;
     bool m_peak_list = false;
     std::vector<Peak>* m_peaks;
+    Vector m_baseline;
 };
 }

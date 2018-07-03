@@ -1,4 +1,3 @@
-
 /*
  * <Math containing Header file.>
  * Copyright (C) 2017  Conrad Hübler <Conrad.Huebler@gmx.net>

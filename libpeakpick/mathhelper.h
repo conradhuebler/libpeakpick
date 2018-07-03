@@ -254,4 +254,12 @@ inline LinearRegression LeastSquares(const Vector& x, const Vector& y)
 
     return regression;
 }
+
+inline LinearRegression LeastSquares(const std::vector<double>& x, const std::vector<double>& y)
+{
+    Vector _x, _y;
+    _x = Vector::Map(&x[0], x.size());
+    _y = Vector::Map(&y[0], y.size());
+    return LeastSquares(_x, _y);
+}
 }

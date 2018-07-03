@@ -120,7 +120,9 @@ public:
 
     inline double Mean() const { return m_mean; }
     inline double Max() const { return m_y(m_pos_max); }
+    inline int IndexMax() const { return m_pos_max; }
     inline double PosMax() const { return X(m_pos_max); }
+    inline int IndexMin() const { return m_pos_min; }
     inline double Min() const { return m_y(m_pos_min); }
     inline double PosMin() const { return X(m_pos_min); }
     inline double StdDev() const { return m_stddev; }
@@ -225,6 +227,11 @@ public:
     {
         for (int i = 0; i < m_y.size(); ++i)
             m_y[i] *= -1;
+    }
+
+    inline double LastY() const
+    {
+        return m_y[m_y.size() - 1];
     }
 
 private:
