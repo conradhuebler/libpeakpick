@@ -47,7 +47,7 @@ inline void Normalise(spectrum* spec, double min = 0.0, double max = 1.0)
     double maximum = spec->Max();
 
 #pragma omp parallel for
-    for (int i = 0; i < spec->size(); ++i)
+    for (int i = 1; i <= spec->size(); ++i)
         spec->setY(i, spec->Y(i) / maximum * max);
 
     spec->Analyse();
@@ -59,7 +59,7 @@ inline void SmoothFunction(spectrum* spec, int points)
     Vector vector(spec->size());
     double norm = SavitzkyGolayNorm(points);
     // #pragma omp parallel for
-    for (int i = 0; i < spec->size(); ++i) {
+    for (int i = 1; i <= spec->size(); ++i) {
         val = 0;
         for (int j = 0; j <= points; ++j) {
             double coeff = SavitzkyGolayCoefficient(points, j);
@@ -100,7 +100,7 @@ inline int FindMinimum(const spectrum* spec, const Peak& peak)
     return pos;
 }
 
-inline std::vector<Peak> PickPeaks(const spectrum* spec, double threshold, double precision = 1000, int start = 0, int end = 0, int step = 1)
+inline std::vector<Peak> PickPeaks(const spectrum* spec, double threshold, double precision = 1000, int start = 1, int end = 1, int step = 1)
 {
     std::vector<Peak> peaks;
     int pos_predes = 0;
@@ -109,7 +109,7 @@ inline std::vector<Peak> PickPeaks(const spectrum* spec, double threshold, doubl
     int peak_open = false;
     if (end == 0)
         end = spec->size();
-    for (int i = start; i < end; i += step) {
+    for (int i = start; i <= end; i += step) {
         y = round(precision * spec->Y(i)) / precision;
         if (y <= threshold) {
             if (peak_open == 1)
@@ -154,11 +154,11 @@ inline std::vector<Peak> PickPeaks(const spectrum* spec, double threshold, doubl
 
 inline double IntegrateNumerical(const spectrum* spec, int start, int end, double offset = 0)
 {
-    if (spec->size() < (end - 1) || spec->size() < start)
+    if (end > spec->size() || spec->size() < start)
         return 0;
 
     double integ = 0;
-    for (int i = start; i < end - 1; ++i) {
+    for (int i = start; i < end; ++i) {
         double x_0 = spec->X(i);
         double x_1 = spec->X(i + 1);
         double y_0 = spec->Y(i) - offset;
@@ -174,11 +174,11 @@ inline double IntegrateNumerical(const spectrum* spec, int start, int end, doubl
 
 inline double IntegrateNumerical(const spectrum* spec, int start, int end, const Vector coeff)
 {
-    if (spec->size() < (end - 1) || spec->size() < start)
+    if (end > spec->size() || spec->size() < start)
         return 0;
 
     double integ = 0;
-    for (int i = start; i < end - 1; ++i) {
+    for (int i = start; i < end; ++i) {
         double x_0 = spec->X(i);
         double x_1 = spec->X(i + 1);
         qreal offset_0 = Polynomial(x_0, coeff);

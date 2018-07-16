@@ -141,10 +141,10 @@ public:
     }
     inline double Y(int i) const
     {
-        if (i >= m_y.size() || i < 0)
+        if (i > m_y.size() || i < 0)
             return 0;
         else
-            return m_y(i);
+            return m_y(i - 1);
     }
 
     inline double Y(double x) const
@@ -166,7 +166,7 @@ public:
     inline double XFromIndex(int index) const
     {
         //         std::cout << "index" <<index << " XMin" << XMin() << " iStep" << index*Step() << std::endl;
-        return XMin() + index * Step();
+        return XMin() + (index - 1) * Step();
     }
 
     inline double Step() const

@@ -170,6 +170,7 @@ public:
 
     inline double operator()(int i)
     {
+#warning maybe 'i - 1' now
         double x = m_spec->X(i);
         double Y = m_spec->Y(i);
         double Y_ = Signal(x, m_parameter);

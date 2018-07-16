@@ -33,6 +33,13 @@
 
 namespace PeakPick {
 
+struct BaseLineResult {
+    std::vector<Vector> baselines;
+    int peaks = 0;
+    std::vector<Vector> x_grid_points;
+    std::vector<Vector> y_grid_points;
+};
+
 template <typename _Scalar, int NX = Eigen::Dynamic, int NY = Eigen::Dynamic>
 
 struct BaseLineFit {
@@ -112,7 +119,18 @@ inline Vector FitBaseLine(const Vector& x, const Vector& y, int size, double mea
 }
 
 class BaseLine {
+
 public:
+    enum Type {
+        Automatic = 0,
+        StartEnd = 1
+    };
+
+    enum BLR {
+        FullSpectrum = 0,
+        PeakWise = 1
+    };
+
     inline BaseLine(const spectrum* spec)
         : m_spec(spec)
         , m_no_coeff(2)
@@ -121,16 +139,91 @@ public:
     {
     }
 
-    enum Type {
-        Automatic = 0,
-        StartEnd = 1
-    };
-
     inline void setNoCoeffs(int no_coeff) { m_no_coeff = no_coeff; }
     inline void setLower(double lower) { m_lower = lower; }
     inline void setUpper(double upper) { m_upper = upper; }
 
-    inline Vector Fit(Type type = Automatic)
+    inline void setBaseLineRange(BLR blr) { m_blr = blr; }
+
+    inline BaseLineResult Fit(Type type = Automatic)
+    {
+        m_baselineresult.x_grid_points.clear();
+        m_baselineresult.y_grid_points.clear();
+
+        if (m_blr == BLR::FullSpectrum) {
+            m_baselineresult.baselines.clear();
+            m_baselineresult.baselines.push_back(FitFullSpectrum(type));
+
+        } else if (m_blr == BLR::PeakWise) {
+
+            m_baselineresult.baselines = FitPeakWise();
+        }
+
+        return m_baselineresult;
+    }
+    inline void setPeaks(std::vector<Peak>* peaks)
+    {
+        m_peaks = peaks;
+        m_peak_list = true;
+    }
+    inline void clearPeaks()
+    {
+        m_peaks->clear();
+        m_peak_list = false;
+    }
+
+    inline spectrum Corrected() const
+    {
+#warning not working right now ...
+        std::vector<double> y;
+        for (int i = 1; i <= m_spec->size(); ++i) {
+            y.push_back(m_spec->Y(i) - Polynomial(m_spec->X(i), m_baseline));
+        }
+        Vector vec = Vector::Map(&y[0], y.size());
+        spectrum spec(vec, m_spec->X(0), m_spec->X(m_spec->size()));
+        return spec;
+    }
+
+private:
+    void ApplyFilter(Vector& x, Vector& y)
+    {
+        std::vector<double> v_x, v_y;
+        for (int i = 1; i <= int(m_spec->size()); ++i) {
+            if (ok(m_spec->Y(i))) {
+                v_x.push_back(m_spec->X(i));
+                v_y.push_back(m_spec->Y(i));
+            }
+        }
+        x = Vector::Map(&v_x[0], v_x.size());
+        y = Vector::Map(&v_y[0], v_y.size());
+
+        m_baselineresult.x_grid_points.push_back(x);
+        m_baselineresult.y_grid_points.push_back(y);
+    }
+
+    void FromPeaks(Vector& x, Vector& y)
+    {
+        std::vector<double> v_x, v_y;
+        for (int i = 0; i < int(m_peaks->size()); ++i) {
+            {
+                v_x.push_back(m_spec->X((*m_peaks)[i].start));
+                v_x.push_back(m_spec->X((*m_peaks)[i].end));
+                v_y.push_back(m_spec->Y((*m_peaks)[i].start));
+                v_y.push_back(m_spec->Y((*m_peaks)[i].end));
+            }
+        }
+        x = Vector::Map(&v_x[0], v_x.size());
+        y = Vector::Map(&v_y[0], v_y.size());
+        m_baselineresult.x_grid_points.push_back(x);
+        m_baselineresult.y_grid_points.push_back(y);
+    }
+
+    inline bool ok(double y)
+    {
+        return (m_lower <= y && y <= m_upper) || (m_lower == m_upper);
+    }
+
+    Vector FitFullSpectrum(Type type)
     {
         Vector vector(m_no_coeff);
         Vector x, y;
@@ -147,6 +240,10 @@ public:
             t_y.push_back(m_spec->LastY());
             x = Vector::Map(&t_x[0], 2);
             y = Vector::Map(&t_y[0], 2);
+
+            m_baselineresult.x_grid_points.push_back(x);
+            m_baselineresult.y_grid_points.push_back(y);
+
             m_no_coeff = 2;
         } else
             throw - 1;
@@ -159,64 +256,38 @@ public:
             vector(0) = regression.n;
             vector(1) = regression.m;
         }
-        m_baseline = vector;
         return vector;
     }
-    inline void setPeaks(std::vector<Peak>* peaks)
+    std::vector<Vector> FitPeakWise()
     {
-        m_peaks = peaks;
-        m_peak_list = true;
-    }
-    inline void clearPeaks()
-    {
-        m_peaks->clear();
-        m_peak_list = false;
-    }
-
-    inline spectrum Corrected() const
-    {
-
-        std::vector<double> y;
-        for (int i = 0; i < m_spec->size(); ++i) {
-            y.push_back(m_spec->Y(i) - Polynomial(m_spec->X(i), m_baseline));
-        }
-        Vector vec = Vector::Map(&y[0], y.size());
-        spectrum spec(vec, m_spec->X(0), m_spec->X(m_spec->size() - 1));
-        return spec;
-    }
-
-private:
-    void ApplyFilter(Vector& x, Vector& y)
-    {
-        std::vector<double> v_x, v_y;
-        for (int i = 0; i < m_spec->size(); ++i) {
-            if (ok(m_spec->Y(i))) {
-                v_x.push_back(m_spec->X(i));
-                v_y.push_back(m_spec->Y(i));
-            }
-        }
-        x = Vector::Map(&v_x[0], v_x.size());
-        y = Vector::Map(&v_y[0], v_y.size());
-    }
-
-    void FromPeaks(Vector& x, Vector& y)
-    {
-        std::vector<double> v_x, v_y;
-        for (int i = 1; i < m_peaks->size() - 1; ++i) {
+        std::vector<Vector> baseline;
+        if (m_no_coeff > 2)
+            m_no_coeff = 2;
+        for (int i = 0; i < m_peaks->size(); ++i) {
             {
+                Vector vector(m_no_coeff);
+                std::vector<double> v_x, v_y;
                 v_x.push_back(m_spec->X((*m_peaks)[i].start));
                 v_x.push_back(m_spec->X((*m_peaks)[i].end));
                 v_y.push_back(m_spec->Y((*m_peaks)[i].start));
                 v_y.push_back(m_spec->Y((*m_peaks)[i].end));
+
+                Vector x = Vector::Map(&v_x[0], v_x.size());
+                Vector y = Vector::Map(&v_y[0], v_y.size());
+
+                m_baselineresult.x_grid_points.push_back(x);
+                m_baselineresult.y_grid_points.push_back(y);
+                if (m_no_coeff == 2) {
+                    LinearRegression regression = LeastSquares(x, y);
+                    vector(0) = regression.n;
+                    vector(1) = regression.m;
+                } else
+                    vector(0) = (y[1] + y[0]) / 2.0;
+                baseline.push_back(vector);
             }
         }
-        x = Vector::Map(&v_x[0], v_x.size());
-        y = Vector::Map(&v_y[0], v_y.size());
-    }
 
-    inline bool ok(double y)
-    {
-        return (m_lower <= y && y <= m_upper) || (m_lower == m_upper);
+        return baseline;
     }
 
     const spectrum* m_spec;
@@ -225,5 +296,7 @@ private:
     bool m_peak_list = false;
     std::vector<Peak>* m_peaks;
     Vector m_baseline;
+    BLR m_blr = BLR::FullSpectrum;
+    BaseLineResult m_baselineresult;
 };
 }
