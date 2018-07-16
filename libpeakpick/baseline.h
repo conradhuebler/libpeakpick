@@ -35,7 +35,6 @@ namespace PeakPick {
 
 struct BaseLineResult {
     std::vector<Vector> baselines;
-    int peaks = 0;
     std::vector<Vector> x_grid_points;
     std::vector<Vector> y_grid_points;
 };
@@ -174,13 +173,21 @@ public:
 
     inline spectrum Corrected() const
     {
-#warning not working right now ...
         std::vector<double> y;
-        for (int i = 1; i <= m_spec->size(); ++i) {
-            y.push_back(m_spec->Y(i) - Polynomial(m_spec->X(i), m_baseline));
+
+        if (m_baselineresult.baselines.size() == 1) {
+            for (int i = 1; i <= m_spec->size(); ++i) {
+                y.push_back(m_spec->Y(i) - Polynomial(m_spec->X(i), m_baseline));
+            }
+        } else if (m_baselineresult.baselines.size() == m_peaks->size()) {
+            for (int i = 0; i < int(m_peaks->size()); ++i) {
+                for (int k = m_peaks->at(i).start; k <= m_peaks->at(i).end; ++k)
+                    y.push_back(m_spec->Y(k) - Polynomial(m_spec->X(k), m_baselineresult.baselines[i]));
+            }
         }
+
         Vector vec = Vector::Map(&y[0], y.size());
-        spectrum spec(vec, m_spec->X(0), m_spec->X(m_spec->size()));
+        spectrum spec(vec, m_spec->X(1), m_spec->X(m_spec->size()));
         return spec;
     }
 
@@ -235,7 +242,7 @@ private:
         } else if (type == StartEnd) {
             std::vector<double> t_x, t_y;
             t_x.push_back(0);
-            t_y.push_back(m_spec->Y(0));
+            t_y.push_back(m_spec->Y(1));
             t_x.push_back(m_spec->size());
             t_y.push_back(m_spec->LastY());
             x = Vector::Map(&t_x[0], 2);
@@ -256,6 +263,7 @@ private:
             vector(0) = regression.n;
             vector(1) = regression.m;
         }
+
         return vector;
     }
     std::vector<Vector> FitPeakWise()
