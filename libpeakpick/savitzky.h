@@ -21,7 +21,7 @@
 
 namespace PeakPick {
 
-inline double SavitzkyGolayCoefficient(int points, int position)
+inline double SavitzkyGolayCoefficient(unsigned int points, unsigned int position)
 {
     double coeff = 0;
     if (position > points)

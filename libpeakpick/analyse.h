@@ -33,35 +33,37 @@ typedef Eigen::VectorXd Vector;
 namespace PeakPick {
 
 struct Peak {
-    int start = 0;
-    int max = 0;
+    unsigned int start = 0;
+    unsigned int max = 0;
+    unsigned int end = 0;
+
     double deconv_x = 0;
     double deconv_y = 0;
-    int end = 0;
     double integ_num = 0;
     double integ_analyt = 0;
 };
 
 inline void Normalise(spectrum* spec, double min = 0.0, double max = 1.0)
 {
+    (void)min;
     double maximum = spec->Max();
 
 #pragma omp parallel for
-    for (int i = 1; i <= spec->size(); ++i)
+    for (unsigned int i = 1; i <= spec->size(); ++i)
         spec->setY(i, spec->Y(i) / maximum * max);
 
     spec->Analyse();
 }
 
-inline void SmoothFunction(spectrum* spec, int points)
+inline void SmoothFunction(spectrum* spec, unsigned int points)
 {
     double val = 0;
     Vector vector(spec->size());
     double norm = SavitzkyGolayNorm(points);
     // #pragma omp parallel for
-    for (int i = 1; i <= spec->size(); ++i) {
+    for (unsigned int i = 1; i <= spec->size(); ++i) {
         val = 0;
-        for (int j = 0; j <= points; ++j) {
+        for (unsigned int j = 0; j <= points; ++j) {
             double coeff = SavitzkyGolayCoefficient(points, j);
             val += coeff * spec->Y(i + j) / norm;
             if (j)
@@ -76,7 +78,7 @@ inline int FindMaximum(const spectrum* spec, const Peak& peak)
 {
     double val = 0;
     int pos = 0;
-    for (int i = peak.start; i < peak.end; ++i) {
+    for (unsigned int i = peak.start; i < peak.end; ++i) {
         double y = spec->Y(i);
         if (val < spec->Y(i)) {
             pos = i;
@@ -90,7 +92,7 @@ inline int FindMinimum(const spectrum* spec, const Peak& peak)
 {
     double val = 0;
     int pos = 0;
-    for (int i = peak.start; i < peak.end; ++i) {
+    for (unsigned int i = peak.start; i < peak.end; ++i) {
         double y = spec->Y(i);
         if (val > spec->Y(i)) {
             pos = i;
@@ -100,16 +102,16 @@ inline int FindMinimum(const spectrum* spec, const Peak& peak)
     return pos;
 }
 
-inline std::vector<Peak> PickPeaks(const spectrum* spec, double threshold, double precision = 1000, int start = 1, int end = 1, int step = 1)
+inline std::vector<Peak> PickPeaks(const spectrum* spec, double threshold, double precision = 1000, unsigned int start = 1, unsigned int end = 1, unsigned int step = 1)
 {
     std::vector<Peak> peaks;
     int pos_predes = 0;
     double predes = 0, y = 0;
     Peak peak;
-    int peak_open = false;
+    unsigned int peak_open = false;
     if (end == 0)
         end = spec->size();
-    for (int i = start; i <= end; i += step) {
+    for (unsigned int i = start; i <= end; i += step) {
         y = round(precision * spec->Y(i)) / precision;
         if (y <= threshold) {
             if (peak_open == 1)
@@ -152,13 +154,13 @@ inline std::vector<Peak> PickPeaks(const spectrum* spec, double threshold, doubl
     return peaks;
 }
 
-inline double IntegrateNumerical(const spectrum* spec, int start, int end, double offset = 0)
+inline double IntegrateNumerical(const spectrum* spec, unsigned int start, unsigned int end, double offset = 0)
 {
     if (end > spec->size() || spec->size() < start)
         return 0;
 
     double integ = 0;
-    for (int i = start; i < end; ++i) {
+    for (unsigned int i = start; i < end; ++i) {
         double x_0 = spec->X(i);
         double x_1 = spec->X(i + 1);
         double y_0 = spec->Y(i) - offset;
@@ -172,17 +174,17 @@ inline double IntegrateNumerical(const spectrum* spec, int start, int end, doubl
     return integ;
 }
 
-inline double IntegrateNumerical(const spectrum* spec, int start, int end, const Vector coeff)
+inline double IntegrateNumerical(const spectrum* spec, unsigned int start, unsigned int end, const Vector coeff)
 {
     if (end > spec->size() || spec->size() < start)
         return 0;
 
     double integ = 0;
-    for (int i = start; i < end; ++i) {
+    for (unsigned int i = start; i < end; ++i) {
         double x_0 = spec->X(i);
         double x_1 = spec->X(i + 1);
-        qreal offset_0 = Polynomial(x_0, coeff);
-        qreal offset_1 = Polynomial(x_1, coeff);
+        double offset_0 = Polynomial(x_0, coeff);
+        double offset_1 = Polynomial(x_1, coeff);
         double y_0 = spec->Y(i) - offset_0;
         double y_1 = spec->Y(i + 1) - offset_1;
         if (std::abs(y_0) < std::abs(y_1))

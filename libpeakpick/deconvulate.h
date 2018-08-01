@@ -43,7 +43,7 @@ struct FitResult {
     double integral = 0;
 };
 
-template <typename _Scalar, int NX = Eigen::Dynamic, int NY = Eigen::Dynamic>
+template <typename _Scalar, unsigned int NX = Eigen::Dynamic, unsigned int NY = Eigen::Dynamic>
 
 struct GaussianLorentzian {
     typedef _Scalar Scalar;
@@ -55,16 +55,16 @@ struct GaussianLorentzian {
     typedef Eigen::Matrix<Scalar, ValuesAtCompileTime, 1> ValueType;
     typedef Eigen::Matrix<Scalar, ValuesAtCompileTime, InputsAtCompileTime> JacobianType;
 
-    int m_inputs, m_values;
+    unsigned int m_inputs, m_values;
 
-    inline GaussianLorentzian(int inputs, int values)
+    inline GaussianLorentzian(unsigned int inputs, unsigned int values)
         : m_inputs(inputs)
         , m_values(values)
     {
     }
 
-    int inputs() const { return m_inputs; }
-    int values() const { return m_values; }
+    unsigned int inputs() const { return m_inputs; }
+    unsigned int values() const { return m_values; }
 };
 
 struct LiberalGLFit : GaussianLorentzian<double> {
@@ -82,18 +82,18 @@ struct LiberalGLFit : GaussianLorentzian<double> {
 
     inline int operator()(const Eigen::VectorXd parameter, Eigen::VectorXd& fvec) const
     {
-        int j = 0;
+        unsigned int j = 0;
         m_glfit->UpdateParamater(parameter);
-        for (int i = start; i <= end; ++i) {
+        for (unsigned int i = start; i <= end; ++i) {
             fvec(j) = (*m_glfit)(i);
             ++j;
         }
         return 0;
     }
 
-    int no_parameter, no_points, start, end;
-    inline int inputs() const { return no_parameter; }
-    inline int values() const { return no_points; }
+    unsigned int no_parameter, no_points, start, end;
+    inline unsigned int inputs() const { return no_parameter; }
+    inline unsigned int values() const { return no_points; }
 
     PeakPick::GLFit* m_glfit;
 };

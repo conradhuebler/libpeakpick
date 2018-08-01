@@ -39,7 +39,7 @@ struct BaseLineResult {
     std::vector<Vector> y_grid_points;
 };
 
-template <typename _Scalar, int NX = Eigen::Dynamic, int NY = Eigen::Dynamic>
+template <typename _Scalar, unsigned int NX = Eigen::Dynamic, unsigned int NY = Eigen::Dynamic>
 
 struct BaseLineFit {
     typedef _Scalar Scalar;
@@ -51,7 +51,7 @@ struct BaseLineFit {
     typedef Eigen::Matrix<Scalar, ValuesAtCompileTime, 1> ValueType;
     typedef Eigen::Matrix<Scalar, ValuesAtCompileTime, InputsAtCompileTime> JacobianType;
 
-    int m_inputs, m_values;
+    unsigned int m_inputs, m_values;
 
     inline BaseLineFit(int inputs, int values)
         : m_inputs(inputs)
@@ -59,12 +59,12 @@ struct BaseLineFit {
     {
     }
 
-    int inputs() const { return m_inputs; }
-    int values() const { return m_values; }
+    unsigned int inputs() const { return m_inputs; }
+    unsigned int values() const { return m_values; }
 };
 
 struct BaseLineFitFunction : BaseLineFit<double> {
-    inline BaseLineFitFunction(const Vector& x, const Vector& y, int size)
+    inline BaseLineFitFunction(const Vector& x, const Vector& y, unsigned int size)
         : m_x(x)
         , m_y(y)
         , BaseLineFit(x.size(), size)
@@ -77,26 +77,26 @@ struct BaseLineFitFunction : BaseLineFit<double> {
 
     inline int operator()(const Eigen::VectorXd parameter, Eigen::VectorXd& fvec) const
     {
-        for (int i = 0; i < m_x.size(); ++i)
+        for (unsigned int i = 0; i < m_x.size(); ++i)
             fvec(i) = m_y(i) - Polynomial(m_x(i), parameter);
         return 0;
     }
 
     int no_parameter, no_points, start, end;
-    inline int inputs() const { return no_parameter; }
-    inline int values() const { return no_points; }
+    inline unsigned int inputs() const { return no_parameter; }
+    inline unsigned int values() const { return no_points; }
     const Vector &m_x, &m_y;
 };
 
 struct BaseLineFitFunctionDiff : Eigen::NumericalDiff<BaseLineFitFunction> {
 };
 
-inline Vector FitBaseLine(const Vector& x, const Vector& y, int size, double mean)
+inline Vector FitBaseLine(const Vector& x, const Vector& y, unsigned int size, double mean)
 {
     BaseLineFitFunction fit(x, y, size);
     Vector parameter(size);
     parameter(0) = mean;
-    for (int i = 1; i < size; ++i)
+    for (unsigned int i = 1; i < size; ++i)
         parameter(i) = pow(10, -2 * (size));
 
     Eigen::NumericalDiff<BaseLineFitFunction> numDiff(fit);
@@ -105,11 +105,11 @@ inline Vector FitBaseLine(const Vector& x, const Vector& y, int size, double mea
 
     qreal diff = 1;
 
-    for (int iter = 0; iter < 100 && diff > 1e-5; ++iter) {
+    for (unsigned int iter = 0; iter < 100 && diff > 1e-5; ++iter) {
 
         Vector param = parameter;
         status = lm.minimizeOneStep(parameter);
-        for (int i = 0; i < size; ++i)
+        for (unsigned int i = 0; i < size; ++i)
             diff += (parameter(i) - param(i)) * (parameter(i) - param(i));
         diff = sqrt(diff);
     }
@@ -176,12 +176,12 @@ public:
         std::vector<double> y;
 
         if (m_baselineresult.baselines.size() == 1) {
-            for (int i = 1; i <= m_spec->size(); ++i) {
+            for (unsigned int i = 1; i <= m_spec->size(); ++i) {
                 y.push_back(m_spec->Y(i) - Polynomial(m_spec->X(i), m_baseline));
             }
         } else if (m_baselineresult.baselines.size() == m_peaks->size()) {
-            for (int i = 0; i < int(m_peaks->size()); ++i) {
-                for (int k = m_peaks->at(i).start; k <= m_peaks->at(i).end; ++k)
+            for (unsigned int i = 0; i < m_peaks->size(); ++i) {
+                for (unsigned int k = m_peaks->at(i).start; k <= m_peaks->at(i).end; ++k)
                     y.push_back(m_spec->Y(k) - Polynomial(m_spec->X(k), m_baselineresult.baselines[i]));
             }
         }
@@ -195,7 +195,7 @@ private:
     void ApplyFilter(Vector& x, Vector& y)
     {
         std::vector<double> v_x, v_y;
-        for (int i = 1; i <= int(m_spec->size()); ++i) {
+        for (unsigned int i = 1; i <= m_spec->size(); ++i) {
             if (ok(m_spec->Y(i))) {
                 v_x.push_back(m_spec->X(i));
                 v_y.push_back(m_spec->Y(i));
@@ -211,7 +211,7 @@ private:
     void FromPeaks(Vector& x, Vector& y)
     {
         std::vector<double> v_x, v_y;
-        for (int i = 0; i < int(m_peaks->size()); ++i) {
+        for (unsigned int i = 0; i < m_peaks->size(); ++i) {
             {
                 v_x.push_back(m_spec->X((*m_peaks)[i].start));
                 v_x.push_back(m_spec->X((*m_peaks)[i].end));
@@ -271,7 +271,7 @@ private:
         std::vector<Vector> baseline;
         if (m_no_coeff > 2)
             m_no_coeff = 2;
-        for (int i = 0; i < m_peaks->size(); ++i) {
+        for (unsigned int i = 0; i < m_peaks->size(); ++i) {
             {
                 Vector vector(m_no_coeff);
                 std::vector<double> v_x, v_y;
@@ -299,7 +299,7 @@ private:
     }
 
     const spectrum* m_spec;
-    int m_no_coeff;
+    unsigned int m_no_coeff;
     double m_lower, m_upper;
     bool m_peak_list = false;
     std::vector<Peak>* m_peaks;

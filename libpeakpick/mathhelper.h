@@ -58,7 +58,7 @@ inline double SimpsonIntegrate(double lower, double upper, std::function<double(
     return integ;
 }
 
-inline double mean(const Vector& vector, int* min = NULL, int* max = NULL)
+inline double mean(const Vector& vector, unsigned int* min = NULL, unsigned int* max = NULL)
 {
     if (vector.size() == 0) {
         std::cout << "PeakPick::mean() vector is empty" << std::endl;
@@ -66,11 +66,11 @@ inline double mean(const Vector& vector, int* min = NULL, int* max = NULL)
     }
     double sum = 0;
     double temp_min = vector(0);
-    int pos_min = 0;
+    unsigned int pos_min = 0;
     double temp_max = vector(0);
-    int pos_max = 0;
+    unsigned int pos_max = 0;
     // #pragma omp parallel for shared(sum, temp_min, pos_min, temp_max, pos_max) reduction(+:sum, &:temp_min, &:pos_min, &:temp_max, &:pos_max)
-    for (int i = 0; i < vector.size(); ++i) {
+    for (unsigned int i = 0; i < vector.size(); ++i) {
         sum += vector(i);
         if (vector(i) > temp_max) {
             temp_max = vector(i);
@@ -90,16 +90,16 @@ inline double mean(const Vector& vector, int* min = NULL, int* max = NULL)
     return sum / double(vector.size());
 }
 
-inline double meanThreshold(const Vector& vector, double threshold, int* min = NULL, int* max = NULL)
+inline double meanThreshold(const Vector& vector, double threshold, unsigned int* min = NULL, unsigned int* max = NULL)
 {
     if (vector.size() == 0)
         return 0;
 
     double sum = 0;
     double temp_min = vector(0);
-    int pos_min = 0;
+    unsigned int pos_min = 0;
     double temp_max = vector(0);
-    int pos_max = 0;
+    unsigned int pos_max = 0;
     for (int i = 0; i < vector.size(); ++i) {
         if (std::abs(vector(i)) >= threshold)
             continue;
@@ -131,7 +131,7 @@ inline double stddev(const Vector& vector, double mean)
     double sum = 0;
 #pragma omp parallel for reduction(+ \
                                    : sum)
-    for (int i = 0; i < vector.size(); ++i) {
+    for (unsigned int i = 0; i < vector.size(); ++i) {
         sum += (vector(i) - mean) * (vector(i) - mean);
     }
     return sqrt(sum / double(vector.size()));
@@ -146,7 +146,7 @@ inline double stddevThreshold(const Vector& vector, double mean, double threshol
 
 #pragma omp parallel for reduction(+ \
                                    : sum)
-    for (int i = 0; i < vector.size(); ++i) {
+    for (unsigned int i = 0; i < vector.size(); ++i) {
         if (std::abs(vector(i)) >= threshold)
             continue;
         sum += (vector(i) - mean) * (vector(i) - mean);
@@ -167,7 +167,7 @@ inline double Lorentzian(double x, double x_0, double gamma)
 inline double Signal(double x, const Vector& parameter)
 {
     double signal = 0;
-    for (int i = 0; i < parameter.size() / 6; ++i) {
+    for (unsigned int i = 0; i < parameter.size() / 6; ++i) {
         double gaussian = Gaussian(x, parameter(1 + i * 6), parameter(0 + i * 6), parameter(2 + i * 6));
         double lorentzian = Lorentzian(x, parameter(0 + i * 6), parameter(3 + i * 6));
         signal += ((1 - parameter(5 + i * 6)) * gaussian + parameter(5 + i * 6) * lorentzian) * parameter(4 + i * 6);
@@ -191,7 +191,7 @@ inline double SignalSingle(double x, const Vector& parameter, int function)
 inline double IntegrateGLFunction(const Vector& parameter)
 {
     double integ = 0;
-    for (int i = 0; i < parameter.size() / 6; ++i) {
+    for (unsigned int i = 0; i < parameter.size() / 6; ++i) {
         integ += (((1 - parameter(5 + i * 6)) * parameter(1 + i * 6) * parameter(2 + i * 6)) + parameter(5 + i * 6)) * parameter(4 + i * 6);
     }
     std::cout << "result from integration over whole function " << integ << parameter.transpose() << std::endl;
@@ -210,7 +210,7 @@ inline double IntegrateGLSignal(const Vector& parameter, double start, double en
 inline double Polynomial(double x, const Vector& coeff)
 {
     double y = 0;
-    for (int i = 0; i < coeff.size(); ++i)
+    for (unsigned int i = 0; i < coeff.size(); ++i)
         y += pow(x, i) * coeff(i);
 
     return y;

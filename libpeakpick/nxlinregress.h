@@ -44,7 +44,7 @@ public:
 
     inline bool Up()
     {
-        for (int i = m_end.size() - 1; i >= 0; --i) {
+        for (unsigned int i = m_end.size() - 1; i != 0; --i) {
             if (m_value[i] < m_end[i]) {
                 m_value[i]++;
                 return true;
@@ -52,7 +52,7 @@ public:
                 std::vector<int> initial = m_value;
                 if (initial[i - 1] < m_end[i - 1]) {
                     initial[i - 1]++;
-                    for (int j = i; j < m_end.size(); ++j) {
+                    for (unsigned int j = i; j < m_end.size(); ++j) {
                         initial[i] = initial[i - 1] + 2;
                     }
                     m_value = initial;
@@ -73,7 +73,7 @@ private:
     std::vector<int> m_value;
 };
 
-inline std::map<double, MultiRegression> LeastSquares(const Vector& x, const Vector& y, int functions)
+inline std::map<double, MultiRegression> LeastSquares(const Vector& x, const Vector& y, unsigned int functions)
 {
     std::map<double, MultiRegression> regressions;
 
@@ -90,7 +90,7 @@ inline std::map<double, MultiRegression> LeastSquares(const Vector& x, const Vec
         regressions[reg.sum_err] = reg;
     } else {
         std::vector<int> starts, ends;
-        for (int i = 0; i < functions; i++) {
+        for (unsigned int i = 0; i < functions; i++) {
             int start = 2 * i;
             starts.push_back(start);
             int end = x.size() - 2 * i;
@@ -107,7 +107,7 @@ inline std::map<double, MultiRegression> LeastSquares(const Vector& x, const Vec
             work.push_back(x.size());
             bool valid = true;
 
-            for (int i = 0; i < work.size() - 1; ++i) {
+            for (unsigned int i = 0; i < work.size() - 1; ++i) {
 
                 std::vector<double> x_i, y_i;
                 for (int j = work[i]; j < work[i + 1]; ++j) {

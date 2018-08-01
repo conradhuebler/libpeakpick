@@ -38,7 +38,7 @@ namespace PeakPick {
 class GLFit {
 
 public:
-    inline GLFit(const spectrum* spec, double start, double end, double ratio = 0.9, int fittype = 1)
+    inline GLFit(const spectrum* spec, double start, double end, double ratio = 0.9, unsigned int fittype = 1)
         : m_spec(spec)
         , m_start(start)
         , m_end(end)
@@ -65,7 +65,7 @@ public:
         m_sum_error = 0;
         m_sum_squared = 0;
         m_err = 0;
-        for (int i = 0; i < parameter.size(); ++i) {
+        for (unsigned int i = 0; i < parameter.size(); ++i) {
             if (m_lock(i) == 0 || m_lock(i) == 2 || m_lock(i) == 3)
                 m_parameter(i) = parameter(i);
 
@@ -147,7 +147,7 @@ public:
 #warning not yet implemented
     }
 
-    inline Vector Function(int function) const
+    inline Vector Function(unsigned int function) const
     {
         Vector parameter(6);
 
@@ -189,7 +189,7 @@ public:
     }
 
     inline int PointsSize() const { return m_end - m_start + 1; }
-    inline int ParamSize() const { return m_parameter.size(); }
+    inline unsigned int ParamSize() const { return m_parameter.size(); }
     inline double Start() const { return m_start; }
     inline double End() const { return m_end; }
     inline double SumError() const { return m_sum_error; }
@@ -199,7 +199,7 @@ public:
     inline void releaseLock()
     {
         Vector lock(m_parameter.size());
-        for (int i = 0; i < m_parameter.size(); ++i)
+        for (unsigned int i = 0; i < m_parameter.size(); ++i)
             lock(i) = 0;
         m_lock = lock;
     }
@@ -207,7 +207,7 @@ public:
     inline void createLock()
     {
         Vector lock(m_parameter.size());
-        for (int i = 0; i < m_parameter.size(); ++i)
+        for (unsigned int i = 0; i < m_parameter.size(); ++i)
             lock(i) = 1;
         m_lock = lock;
     }
@@ -215,7 +215,7 @@ public:
     inline void Lock()
     {
         Vector lock(m_parameter.size());
-        for (int i = 0; i < m_parameter.size() / 6; ++i) {
+        for (unsigned int i = 0; i < m_parameter.size() / 6; ++i) {
             if (m_fittype == Conservative)
                 lock(0 + i * 6) = 1;
             else
@@ -237,7 +237,7 @@ public:
     void Print() const
     {
         std::cout << "Gauss/Lorentz Parameter:" << std::endl;
-        for (int i = 0; i < m_parameter.size() / 6; ++i) {
+        for (unsigned int i = 0; i < m_parameter.size() / 6; ++i) {
             double a = m_parameter(1 + i * 6);
             double x_0 = m_parameter(0 + i * 6);
             double c = m_parameter(2 + i * 6);
@@ -250,7 +250,7 @@ public:
 
 private:
     Vector m_parameter, m_guess, m_lock;
-    int m_fittype;
+    unsigned int m_fittype;
     const spectrum* m_spec;
     double m_start, m_end, m_ratio, m_err, m_sum_error, m_sum_squared;
 };
