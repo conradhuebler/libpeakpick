@@ -314,13 +314,12 @@ private:
             throw - 1;
 
         if (m_no_coeff >= 3) {
-            std::cout << m_baseline.transpose() << std::endl;
             if (m_polynom == Polynom::Fast)
                 vector = FitBaseLine(x, y, m_no_coeff, m_spec->Mean());
-            else
+            else {
                 vector = FitBaseLineIterative(x, y, m_no_coeff, m_spec->Mean(), m_baseline);
-            m_baseline = vector;
-            std::cout << m_baseline.transpose() << std::endl;
+                m_baseline = vector;
+            }
 
         } else if (m_no_coeff == 2) {
             LinearRegression regression = LeastSquares(x, y);
