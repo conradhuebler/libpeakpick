@@ -91,13 +91,16 @@ struct BaseLineFitFunction : BaseLineFit<double> {
 struct BaseLineFitFunctionDiff : Eigen::NumericalDiff<BaseLineFitFunction> {
 };
 
-inline Vector FitBaseLine(const Vector& x, const Vector& y, unsigned int size, double mean)
+inline Vector FitBaseLine(const Vector& x, const Vector& y, unsigned int size, double mean, Vector initial = Vector(0))
 {
     BaseLineFitFunction fit(x, y, size);
     Vector parameter(size);
-    parameter(0) = mean;
-    for (unsigned int i = 1; i < size; ++i)
-        parameter(i) = pow(10, -2 * (size));
+    if (initial.size() != parameter.size()) {
+        parameter(0) = mean;
+        for (unsigned int i = 1; i < size; ++i)
+            parameter(i) = pow(10, -2 * int(size));
+    } else
+        parameter = initial;
 
     Eigen::NumericalDiff<BaseLineFitFunction> numDiff(fit);
     Eigen::LevenbergMarquardt<Eigen::NumericalDiff<BaseLineFitFunction>> lm(numDiff);
@@ -117,6 +120,52 @@ inline Vector FitBaseLine(const Vector& x, const Vector& y, unsigned int size, d
     return parameter;
 }
 
+inline Vector FitBaseLineIterative(const Vector& x, const Vector& y, unsigned int size, double mean, Vector initial = Vector(0))
+{
+    //    std::cout << "Intitial guess: " << initial.transpose() << std::endl;
+
+    Vector increment = initial;
+    if (initial.size() > size) {
+        increment = Vector(size - 1);
+        for (unsigned int i = 0; i < size - 1; ++i)
+            increment(i) = initial(i);
+        initial = increment;
+    }
+
+    if (initial.size() < 1) {
+        LinearRegression regression = LeastSquares(x, y);
+
+        initial = Vector(2);
+        initial(0) = regression.n;
+        initial(1) = regression.m;
+    }
+    increment = initial;
+    Vector old = initial;
+    //    std::cout << "Intitial guess created: " << initial.transpose() << std::endl;
+    for (unsigned int i = initial.size(); i < size; ++i) {
+        if (i < size) {
+            initial = Vector(i + 1);
+            for (unsigned int j = 0; j < i; ++j)
+                initial(j) = increment(j);
+            initial(i) = 1e-3;
+            //std::cout << "Step: "<< i << ": Guess " << initial.transpose() << std::endl << std::endl;
+        }
+
+        increment = FitBaseLine(x, y, i + 1, mean, initial);
+
+        //std::cout << "Step: "<< i << ": Result " << increment.transpose() << std::endl;
+
+        if (increment == initial) {
+            //  std::cout << "something converged although should not";
+            increment = old;
+            break;
+        }
+        old = increment;
+    }
+
+    return increment;
+}
+
 class BaseLine {
 
 public:
@@ -128,6 +177,11 @@ public:
     enum BLR {
         FullSpectrum = 0,
         PeakWise = 1
+    };
+
+    enum Polynom {
+        Fast = 0,
+        Slow = 1
     };
 
     inline BaseLine(const spectrum* spec)
@@ -143,6 +197,10 @@ public:
     inline void setUpper(double upper) { m_upper = upper; }
 
     inline void setBaseLineRange(BLR blr) { m_blr = blr; }
+
+    inline void setPolynomFit(Polynom polynom) { m_polynom = polynom; }
+
+    inline void setInitialBaseLine(const Vector& vector) { m_baseline = vector; }
 
     inline BaseLineResult Fit(Type type = Automatic)
     {
@@ -256,13 +314,21 @@ private:
             throw - 1;
 
         if (m_no_coeff >= 3) {
-            vector = FitBaseLine(x, y, m_no_coeff, m_spec->Mean());
-        } else if (m_no_coeff == 2) {
+            std::cout << m_baseline.transpose() << std::endl;
+            if (m_polynom == Polynom::Fast)
+                vector = FitBaseLine(x, y, m_no_coeff, m_spec->Mean());
+            else
+                vector = FitBaseLineIterative(x, y, m_no_coeff, m_spec->Mean(), m_baseline);
+            m_baseline = vector;
+            std::cout << m_baseline.transpose() << std::endl;
 
+        } else if (m_no_coeff == 2) {
             LinearRegression regression = LeastSquares(x, y);
+
             vector(0) = regression.n;
             vector(1) = regression.m;
-        }
+        } else if (m_no_coeff == 1)
+            vector(0) = mean(y);
 
         return vector;
     }
@@ -303,8 +369,9 @@ private:
     double m_lower, m_upper;
     bool m_peak_list = false;
     std::vector<Peak>* m_peaks;
-    Vector m_baseline;
+    Vector m_baseline = Vector(0);
     BLR m_blr = BLR::FullSpectrum;
+    Polynom m_polynom = Polynom::Slow;
     BaseLineResult m_baselineresult;
 };
 }
