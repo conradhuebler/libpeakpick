@@ -141,7 +141,7 @@ public:
     }
     inline double Y(unsigned int i) const
     {
-        if (i > m_y.size())
+        if (i > m_y.size() || i == 0)
             return 0;
         else
             return m_y(i - 1);
@@ -185,7 +185,7 @@ public:
     inline double XMin() const { return m_min; }
     inline double XMax() const { return m_max; }
 
-    inline void setY(unsigned int i, double value) { m_y(i) = value; }
+    inline void setY(unsigned int i, double value) { m_y(i - 1) = value; }
 
     inline unsigned int size() const { return m_y.size(); }
 

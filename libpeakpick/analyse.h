@@ -69,7 +69,7 @@ inline void SmoothFunction(spectrum* spec, unsigned int points)
             if (j)
                 val += coeff * spec->Y(i - j) / norm;
         }
-        vector(i) = val;
+        vector(i - 1) = val;
     }
     spec->setSpectrum(vector);
 }
@@ -102,7 +102,7 @@ inline int FindMinimum(const spectrum* spec, const Peak& peak)
     return pos;
 }
 
-inline std::vector<Peak> PickPeaks(const spectrum* spec, double threshold, double precision = 1000, unsigned int start = 1, unsigned int end = 1, unsigned int step = 1)
+inline std::vector<Peak> PickPeaks(const spectrum* spec, double threshold, double precision = 1000, unsigned int start = 1, unsigned int end = 0, unsigned int step = 1)
 {
     std::vector<Peak> peaks;
     int pos_predes = 0;
