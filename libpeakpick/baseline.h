@@ -39,7 +39,7 @@ struct BaseLineResult {
     std::vector<Vector> y_grid_points;
 };
 
-template <typename _Scalar, unsigned int NX = Eigen::Dynamic, unsigned int NY = Eigen::Dynamic>
+template <typename _Scalar, int NX = Eigen::Dynamic, int NY = Eigen::Dynamic>
 
 struct BaseLineFit {
     typedef _Scalar Scalar;
@@ -51,7 +51,7 @@ struct BaseLineFit {
     typedef Eigen::Matrix<Scalar, ValuesAtCompileTime, 1> ValueType;
     typedef Eigen::Matrix<Scalar, ValuesAtCompileTime, InputsAtCompileTime> JacobianType;
 
-    unsigned int m_inputs, m_values;
+    int m_inputs, m_values;
 
     inline BaseLineFit(int inputs, int values)
         : m_inputs(inputs)
@@ -59,8 +59,8 @@ struct BaseLineFit {
     {
     }
 
-    unsigned int inputs() const { return m_inputs; }
-    unsigned int values() const { return m_values; }
+    int inputs() const { return m_inputs; }
+    int values() const { return m_values; }
 };
 
 struct BaseLineFitFunction : BaseLineFit<double> {
