@@ -140,6 +140,9 @@ inline Vector FitBaseLineIterative(const Vector& x, const Vector& y, unsigned in
         initial(1) = regression.m;
     }
     increment = initial;
+    if (x.size() == 0 || y.size() == 0)
+        return initial;
+
     Vector old = initial;
     //    std::cout << "Intitial guess created: " << initial.transpose() << std::endl;
     for (unsigned int i = initial.size(); i < size; ++i) {
