@@ -144,7 +144,7 @@ public:
     {
         if (function >= m_parameter.size() / 6)
             return false;
-#warning not yet implemented
+// #warning not yet implemented
     }
 
     inline Vector Function(unsigned int function) const
@@ -170,7 +170,7 @@ public:
 
     inline double operator()(int i)
     {
-#warning maybe 'i - 1' now
+// #warning maybe 'i - 1' now
         double x = m_spec->X(i);
         double Y = m_spec->Y(i);
         double Y_ = Signal(x, m_parameter);
