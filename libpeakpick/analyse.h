@@ -154,6 +154,29 @@ inline std::vector<Peak> PickPeaks(const spectrum* spec, double threshold, doubl
     return peaks;
 }
 
+inline std::vector<Peak> Divide2Peaks(const spectrum* spec, double start, unsigned int peaks)
+{
+    std::vector<Peak> peak_list;
+
+    int index_start = spec->XtoIndex(start);
+    int diff = (spec->size() - index_start) / peaks;
+
+    std::cout << index_start << " from " << start << std::endl;
+    std::cout << "spec size" << spec->size() << std::endl;
+
+    for (unsigned int i = index_start; i < spec->size(); i += diff) {
+        if (i - 1 + diff > spec->size())
+            continue;
+
+        Peak peak;
+        peak.start = i;
+        peak.end = i - 1 + diff;
+        std::cout << i << " .... " << i - 1 + diff << " ---- " << spec->size() << std::endl;
+        peak_list.push_back(peak);
+    }
+    return peak_list;
+}
+
 inline double IntegrateNumerical(const std::vector<double>& x, const std::vector<double>& y, unsigned int start = 0, unsigned int end = 0, double offset = 0)
 {
     if (x.size() != y.size())
