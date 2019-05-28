@@ -153,18 +153,27 @@ inline std::vector<Peak> PickPeaks(const spectrum* spec, double threshold, doubl
     }
     return peaks;
 }
-
-inline std::vector<Peak> Divide2Peaks(const spectrum* spec, double start, unsigned int peaks)
+/*
+inline std::vector<Peak> PickPeaks(const spectrum* spec, double threshold, double precision = 1000, double start = 1, double end = 0, unsigned int step = 1)
+{
+    return PickPeaks(spec, threshold, precision, spec->XtoIndex(start), spec->XtoIndex(end), step);
+}
+*/
+inline std::vector<Peak> Divide2Peaks(const spectrum* spec, double start, unsigned int peaks, double end = 0)
 {
     std::vector<Peak> peak_list;
 
     int index_start = spec->XtoIndex(start);
     int diff = (spec->size() - index_start) / peaks;
 
+    int end_range = spec->size();
+    if (end > start)
+        end_range = spec->XtoIndex(end);
+
     std::cout << index_start << " from " << start << std::endl;
     std::cout << "spec size" << spec->size() << std::endl;
 
-    for (unsigned int i = index_start; i < spec->size(); i += diff) {
+    for (unsigned int i = index_start; i < end_range; i += diff) {
         if (i - 1 + diff > spec->size())
             continue;
 
