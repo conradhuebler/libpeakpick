@@ -196,6 +196,8 @@ inline double IntegrateNumerical(const std::vector<double>& x, const std::vector
     if (end == 0)
         end = x.size() - 1;
     double integ = 0;
+#pragma omp parallel for reduction(+ \
+                                   : integ)
     for (unsigned int i = start; i < end - 1; ++i) {
         double x_0 = x[i];
         double x_1 = x[i + 1];
@@ -216,6 +218,8 @@ inline double IntegrateNumerical(const spectrum* spec, unsigned int start, unsig
         return 0;
 
     double integ = 0;
+#pragma omp parallel for reduction(+ \
+                                   : integ)
     for (unsigned int i = start; i < end; ++i) {
         double x_0 = spec->X(i);
         double x_1 = spec->X(i + 1);
@@ -236,6 +240,8 @@ inline double IntegrateNumerical(const spectrum* spec, unsigned int start, unsig
         return 0;
 
     double integ = 0;
+#pragma omp parallel for reduction(+ \
+                                   : integ)
     for (unsigned int i = start; i < end; ++i) {
         double x_0 = spec->X(i);
         double x_1 = spec->X(i + 1);
