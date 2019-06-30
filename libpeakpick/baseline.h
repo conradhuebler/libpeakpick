@@ -269,7 +269,7 @@ public:
             }
         } else if (m_baselineresult.baselines.size() == m_peaks->size()) {
             for (unsigned int i = 0; i < m_peaks->size(); ++i) {
-                for (unsigned int k = m_peaks->at(i).start; k <= m_peaks->at(i).end; ++k)
+                for (unsigned int k = m_peaks->at(i).int_start; k <= m_peaks->at(i).int_end; ++k)
                     y.push_back(m_spec->Y(k) - Polynomial(m_spec->X(k), m_baselineresult.baselines[i]));
             }
         }
@@ -301,10 +301,10 @@ private:
         std::vector<double> v_x, v_y;
         for (unsigned int i = 0; i < m_peaks->size(); ++i) {
             {
-                v_x.push_back(m_spec->X((*m_peaks)[i].start));
-                v_x.push_back(m_spec->X((*m_peaks)[i].end));
-                v_y.push_back(m_spec->Y((*m_peaks)[i].start));
-                v_y.push_back(m_spec->Y((*m_peaks)[i].end));
+                v_x.push_back(m_spec->X((*m_peaks)[i].int_start));
+                v_x.push_back(m_spec->X((*m_peaks)[i].int_end));
+                v_y.push_back(m_spec->Y((*m_peaks)[i].int_start));
+                v_y.push_back(m_spec->Y((*m_peaks)[i].int_end));
             }
         }
         x = Vector::Map(&v_x[0], v_x.size());
@@ -374,10 +374,10 @@ private:
             {
                 Vector vector(m_no_coeff);
                 std::vector<double> v_x, v_y;
-                v_x.push_back(m_spec->X((*m_peaks)[i].start));
-                v_x.push_back(m_spec->X((*m_peaks)[i].end));
-                v_y.push_back(m_spec->Y((*m_peaks)[i].start));
-                v_y.push_back(m_spec->Y((*m_peaks)[i].end));
+                v_x.push_back(m_spec->X((*m_peaks)[i].int_start));
+                v_x.push_back(m_spec->X((*m_peaks)[i].int_end));
+                v_y.push_back(m_spec->Y((*m_peaks)[i].int_start));
+                v_y.push_back(m_spec->Y((*m_peaks)[i].int_end));
 
                 Vector x = Vector::Map(&v_x[0], v_x.size());
                 Vector y = Vector::Map(&v_y[0], v_y.size());

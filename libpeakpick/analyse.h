@@ -37,10 +37,24 @@ struct Peak {
     unsigned int max = 0;
     unsigned int end = 0;
 
+    unsigned int int_start = 0;
+    unsigned int int_end = 0;
+
     double deconv_x = 0;
     double deconv_y = 0;
     double integ_num = 0;
     double integ_analyt = 0;
+
+    inline void setPeakStart(int peak_start)
+    {
+        start = peak_start;
+        int_start = peak_start;
+    }
+    inline void setPeakEnd(int peak_end)
+    {
+        end = peak_end;
+        int_end = peak_end;
+    }
 };
 
 inline void Normalise(spectrum* spec, double min = 0.0, double max = 1.0)
@@ -119,9 +133,9 @@ inline std::vector<Peak> PickPeaks(const spectrum* spec, double threshold, doubl
             if (peak_open == 2) {
                 peak.end = i;
                 peaks.push_back(peak);
-                peak.start = i;
+                peak.setPeakStart(i);
                 peak.max = i;
-                peak.end = i;
+                peak.setPeakEnd(i);
                 peak_open = 0;
             }
             pos_predes = i;
@@ -136,9 +150,9 @@ inline std::vector<Peak> PickPeaks(const spectrum* spec, double threshold, doubl
             else if (peak_open == 2) {
                 peak.end = pos_predes;
                 peaks.push_back(peak);
-                peak.start = i;
+                peak.setPeakStart(i);
                 peak.max = i;
-                peak.end = i;
+                peak.setPeakEnd(i);
                 peak_open = 0;
                 continue;
             }
@@ -260,14 +274,14 @@ inline double IntegrateNumerical(const spectrum* spec, unsigned int start, unsig
 
 inline double IntegrateNumerical(const spectrum* spec, Peak& peak, double offset = 0)
 {
-    double integ = IntegrateNumerical(spec, peak.start, peak.end, offset);
+    double integ = IntegrateNumerical(spec, peak.int_start, peak.int_end, offset);
     peak.integ_num = integ;
     return integ;
 }
 
 inline double IntegrateNumerical(const spectrum* spec, Peak& peak, const Vector& coeff)
 {
-    double integ = IntegrateNumerical(spec, peak.start, peak.end, coeff);
+    double integ = IntegrateNumerical(spec, peak.int_start, peak.int_end, coeff);
     peak.integ_num = integ;
     return integ;
 }
