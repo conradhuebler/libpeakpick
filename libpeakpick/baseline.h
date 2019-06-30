@@ -120,6 +120,32 @@ inline Vector FitBaseLine(const Vector& x, const Vector& y, unsigned int size, d
     return parameter;
 }
 
+inline Vector FitBaseLineMLR(const Vector& x, const Vector& y, unsigned int size)
+{
+    Vector parameter = Vector::Zero(size);
+    if (size > x.size())
+        return parameter;
+
+    double max = x[x.size() - 1];
+
+    //std::cout << x << std::endl;
+    Eigen::MatrixXd X = Eigen::MatrixXd::Ones(x.size(), size);
+
+    for (int j = 0; j < x.size(); ++j) {
+        const double quotient = x(j); ///max;
+        for (int i = size - 1; i >= 0; --i)
+            X(j, i) *= pow(quotient, i);
+    }
+    //std::cout << X << std::endl;
+
+    parameter = (X.bdcSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(y));
+    std::cout << parameter.transpose() << std::endl;
+    //for(int i = size - 1; i >= 1; --i)
+    //    parameter(i) /= max;
+    std::cout << parameter.transpose() << std::endl;
+    return parameter;
+}
+
 inline Vector FitBaseLineIterative(const Vector& x, const Vector& y, unsigned int size, double mean, Vector initial = Vector(0))
 {
     //    std::cout << "Intitial guess: " << initial.transpose() << std::endl;
@@ -184,7 +210,8 @@ public:
 
     enum Polynom {
         Fast = 0,
-        Slow = 1
+        Slow = 1,
+        MLR = 2
     };
 
     inline BaseLine(const spectrum* spec)
@@ -317,9 +344,13 @@ private:
             throw - 1;
 
         if (m_no_coeff >= 3) {
-            if (m_polynom == Polynom::Fast)
+            if (m_polynom == Polynom::MLR) {
+                vector = FitBaseLineMLR(x, y, m_no_coeff);
+                m_baseline = vector;
+            } else if (m_polynom == Polynom::Fast) {
                 vector = FitBaseLine(x, y, m_no_coeff, m_spec->Mean());
-            else {
+                m_baseline = vector;
+            } else {
                 vector = FitBaseLineIterative(x, y, m_no_coeff, m_spec->Mean(), m_baseline);
                 m_baseline = vector;
             }
