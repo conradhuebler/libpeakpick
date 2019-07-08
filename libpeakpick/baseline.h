@@ -374,10 +374,10 @@ private:
             {
                 Vector vector(m_no_coeff);
                 std::vector<double> v_x, v_y;
-                v_x.push_back(m_spec->X((*m_peaks)[i].int_start));
-                v_x.push_back(m_spec->X((*m_peaks)[i].int_end));
-                v_y.push_back(m_spec->Y((*m_peaks)[i].int_start));
-                v_y.push_back(m_spec->Y((*m_peaks)[i].int_end));
+                v_x.push_back(m_spec->X((*m_peaks)[i].start));
+                v_x.push_back(m_spec->X((*m_peaks)[i].end));
+                v_y.push_back(m_spec->Y((*m_peaks)[i].start));
+                v_y.push_back(m_spec->Y((*m_peaks)[i].end));
 
                 Vector x = Vector::Map(&v_x[0], v_x.size());
                 Vector y = Vector::Map(&v_y[0], v_y.size());
@@ -407,4 +407,47 @@ private:
     Polynom m_polynom = Polynom::Slow;
     BaseLineResult m_baselineresult;
 };
+
+inline void ResizeIntegrationRange(const spectrum *spec, Peak *peak, Vector baseline, int start, double threshold = 1e-6, int maxovershot = 10)
+{
+    double x_0 = spec->X(start);
+    double offset_0 = Polynomial(x_0, baseline);
+    double y_0 = spec->Y(start) - offset_0;
+        
+    bool sign_0 = std::signbit(y_0);
+    
+    int counter = 0;
+    
+    if(threshold < 1e-10)
+    {
+        for (unsigned int i = start + 1; i < peak->end - 1; ++i) {
+            double x = spec->X(i);
+            double offset = Polynomial(x, baseline);
+
+            double y = spec->Y(i) - offset;
+            bool sign = std::signbit(y);
+
+            if(sign != sign_0)
+            {
+                peak->int_end = i;
+                break;
+            }
+            sign_0 = std::signbit(y_0);
+        }
+    }else{
+             for (unsigned int i = start; i < peak->end - 1; ++i) {
+            double x = spec->X(i);
+            double offset = Polynomial(x, baseline);
+
+            double y = spec->Y(i) - offset;
+
+            counter += y < threshold;
+            if(counter > maxovershot)
+            {
+                peak->int_end = i;
+                break;
+            }
+        }   
+    }
+}
 }
