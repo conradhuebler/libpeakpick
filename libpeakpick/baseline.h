@@ -374,10 +374,10 @@ private:
             {
                 Vector vector(m_no_coeff);
                 std::vector<double> v_x, v_y;
-                v_x.push_back(m_spec->X((*m_peaks)[i].start));
-                v_x.push_back(m_spec->X((*m_peaks)[i].end));
-                v_y.push_back(m_spec->Y((*m_peaks)[i].start));
-                v_y.push_back(m_spec->Y((*m_peaks)[i].end));
+                v_x.push_back(m_spec->X((*m_peaks)[i].int_start));
+                v_x.push_back(m_spec->X((*m_peaks)[i].int_end));
+                v_y.push_back(m_spec->Y((*m_peaks)[i].int_start));
+                v_y.push_back(m_spec->Y((*m_peaks)[i].int_end));
 
                 Vector x = Vector::Map(&v_x[0], v_x.size());
                 Vector y = Vector::Map(&v_y[0], v_y.size());
@@ -432,22 +432,23 @@ inline void ResizeIntegrationRange(const spectrum *spec, Peak *peak, Vector base
                 peak->int_end = i;
                 break;
             }
-            sign_0 = std::signbit(y_0);
         }
     }else{
-             for (unsigned int i = start; i < peak->end - 1; ++i) {
+        for (unsigned int i = start; i < peak->end - 1; ++i) {
             double x = spec->X(i);
             double offset = Polynomial(x, baseline);
 
-            double y = spec->Y(i) - offset;
+            double y = std::abs(spec->Y(i) - offset);
 
             counter += y < threshold;
-            if(counter > maxovershot)
-            {
+
+            bool sign = std::signbit(spec->Y(i) - offset);
+
+            if (sign != sign_0 || counter > maxovershot) {
                 peak->int_end = i;
                 break;
             }
-        }   
-    }
+        }
+}
 }
 }
