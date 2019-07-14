@@ -1,6 +1,6 @@
 /*
  * <BaseLine Header file.>
- * Copyright (C) 2018  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -370,27 +370,55 @@ private:
         std::vector<Vector> baseline;
         if (m_no_coeff > 2)
             m_no_coeff = 2;
-        for (unsigned int i = 0; i < m_peaks->size(); ++i) {
-            {
+        /*
+        else if(m_no_coeff == 3)
+        {
+            for (unsigned int i = 0; i < m_peaks->size(); ++i) {
                 Vector vector(m_no_coeff);
                 std::vector<double> v_x, v_y;
-                v_x.push_back(m_spec->X((*m_peaks)[i].int_start));
+
+                v_x.push_back(m_spec->X((*m_peaks)[i].start));
+                //v_x.push_back(m_spec->X((*m_peaks)[i].int_start));
                 v_x.push_back(m_spec->X((*m_peaks)[i].int_end));
-                v_y.push_back(m_spec->Y((*m_peaks)[i].int_start));
+                v_x.push_back(m_spec->X((*m_peaks)[i].end));
+
+                v_y.push_back(m_spec->Y((*m_peaks)[i].start));
+                //v_y.push_back(m_spec->Y((*m_peaks)[i].int_start));
                 v_y.push_back(m_spec->Y((*m_peaks)[i].int_end));
+                v_y.push_back(m_spec->Y((*m_peaks)[i].end));
 
-                Vector x = Vector::Map(&v_x[0], v_x.size());
-                Vector y = Vector::Map(&v_y[0], v_y.size());
+                vector[2] = (v_x[0]*(v_y[2]-v_y[1])+v_x[1]*(v_y[0]-v_y[2])+v_x[2]*(v_y[1]-v_y[0]))/((v_x[0]-v_x[1])*(v_x[0]-v_x[2])*(v_x[1]-v_x[2]));
+                vector[1] = (v_y[1]-v_y[0])/(v_x[1]-v_x[0])- vector[2]*(v_x[0]+v_x[1]);
+                vector[0] = v_y[0]- vector[2]* v_x[0]*v_x[0] -  vector[1]*v_x[0] ;
+                std::cout << i << " " << vector.transpose() << std::endl;
 
-                m_baselineresult.x_grid_points.push_back(x);
-                m_baselineresult.y_grid_points.push_back(y);
-                if (m_no_coeff == 2) {
-                    LinearRegression regression = LeastSquares(x, y);
-                    vector(0) = regression.n;
-                    vector(1) = regression.m;
-                } else
-                    vector(0) = (y[1] + y[0]) / 2.0;
                 baseline.push_back(vector);
+             }
+
+        }else*/
+        {
+            for (unsigned int i = 0; i < m_peaks->size(); ++i) {
+                {
+                    Vector vector(m_no_coeff);
+                    std::vector<double> v_x, v_y;
+                    v_x.push_back(m_spec->X((*m_peaks)[i].int_start));
+                    v_x.push_back(m_spec->X((*m_peaks)[i].int_end));
+                    v_y.push_back(m_spec->Y((*m_peaks)[i].int_start));
+                    v_y.push_back(m_spec->Y((*m_peaks)[i].int_end));
+
+                    Vector x = Vector::Map(&v_x[0], v_x.size());
+                    Vector y = Vector::Map(&v_y[0], v_y.size());
+
+                    m_baselineresult.x_grid_points.push_back(x);
+                    m_baselineresult.y_grid_points.push_back(y);
+                    if (m_no_coeff == 2) {
+                        LinearRegression regression = LeastSquares(x, y);
+                        vector(0) = regression.n;
+                        vector(1) = regression.m;
+                    } else
+                        vector(0) = (y[1] + y[0]) / 2.0;
+                    baseline.push_back(vector);
+                }
             }
         }
 

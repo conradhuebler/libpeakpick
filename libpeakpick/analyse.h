@@ -1,6 +1,6 @@
 /*
  * <Math containing Header file.>
- * Copyright (C) 2017  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,6 +35,7 @@ namespace PeakPick {
 struct Peak {
     unsigned int start = 0;
     unsigned int max = 0;
+    unsigned int min = 0;
     unsigned int end = 0;
 
     unsigned int int_start = 0;
@@ -90,8 +91,8 @@ inline void SmoothFunction(spectrum* spec, unsigned int points)
 
 inline int FindMaximum(const spectrum* spec, const Peak& peak)
 {
-    double val = 0;
-    int pos = 0;
+    double val = spec->Y(peak.start);
+    int pos = peak.start;
     for (unsigned int i = peak.start; i < peak.end; ++i) {
         double y = spec->Y(i);
         if (val < spec->Y(i)) {
@@ -104,8 +105,8 @@ inline int FindMaximum(const spectrum* spec, const Peak& peak)
 
 inline int FindMinimum(const spectrum* spec, const Peak& peak)
 {
-    double val = 0;
-    int pos = 0;
+    double val = spec->Y(peak.start);
+    int pos = peak.start;
     for (unsigned int i = peak.start; i < peak.end; ++i) {
         double y = spec->Y(i);
         if (val > spec->Y(i)) {
