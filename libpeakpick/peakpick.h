@@ -28,7 +28,7 @@
 
 inline PeakPick::spectrum loadFromFile(const std::string& filename, double min = 0, double max = 0)
 {
-    Vector y;
+    Vector x, y;
     std::ifstream myfile;
     std::string line;
     myfile.open(filename);
@@ -36,21 +36,21 @@ inline PeakPick::spectrum loadFromFile(const std::string& filename, double min =
     std::string start = "#start = ";
     std::string end = "#end = ";
     if (myfile.is_open()) {
-        std::vector<double> entries;
+        std::vector<double> entries_x, entries_y;
         int rows(0);
         while (getline(myfile, line)) {
 
             if (line.find(ignore) != std::string::npos)
                 continue;
 
+            entries_y.push_back(std::stod(line));
+            entries_x.push_back(min + rows);
             rows++;
-
-            entries.push_back(std::stod(line));
         }
-        y = Vector::Map(&entries[0], rows); //[0], rows, 1);
+        y = Vector::Map(&entries_y[0], rows); //[0], rows, 1);
+        x = Vector::Map(&entries_x[0], rows);
         myfile.close();
     } else
         std::cout << "Unable to open file" << std::endl;
-    ;
-    return PeakPick::spectrum(y, min, max);
+    return PeakPick::spectrum(x, y);
 }

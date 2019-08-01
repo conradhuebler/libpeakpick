@@ -76,6 +76,7 @@ inline double mean(const Vector& vector, unsigned int* min = NULL, unsigned int*
             temp_max = vector(i);
             pos_max = i;
         }
+
         if (vector(i) < temp_min) {
             temp_min = vector(i);
             pos_min = i;

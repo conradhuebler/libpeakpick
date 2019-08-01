@@ -126,7 +126,7 @@ inline std::vector<Peak> PickPeaks(const spectrum* spec, double threshold, doubl
     unsigned int peak_open = false;
     if (end == 0)
         end = spec->size();
-    for (unsigned int i = start; i <= end; i += step) {
+    for (unsigned int i = start; i < end; i += step) {
         y = round(precision * spec->Y(i)) / precision;
         if (y <= threshold) {
             if (peak_open == 1)
@@ -235,11 +235,11 @@ inline double IntegrateNumerical(const spectrum* spec, unsigned int start, unsig
     double integ = 0;
 #pragma omp parallel for reduction(+ \
                                    : integ)
-    for (unsigned int i = start; i < end; ++i) {
-        double x_0 = spec->X(i);
-        double x_1 = spec->X(i + 1);
-        double y_0 = spec->Y(i) - offset;
-        double y_1 = spec->Y(i + 1) - offset;
+    for (unsigned int i = start; i < end - 1; ++i) {
+        double x_0 = spec->x()[i];
+        double x_1 = spec->x()[i + 1];
+        double y_0 = spec->y()[i] - offset;
+        double y_1 = spec->y()[i + 1] - offset;
         if (std::abs(y_0) < std::abs(y_1))
             integ += (x_1 - x_0) * y_0 + (x_1 - x_0) * (y_1 - y_0) / 2.0;
         else
@@ -251,19 +251,20 @@ inline double IntegrateNumerical(const spectrum* spec, unsigned int start, unsig
 
 inline double IntegrateNumerical(const spectrum* spec, unsigned int start, unsigned int end, const Vector coeff)
 {
+
     if (end > spec->size() || spec->size() < start)
         return 0;
 
     double integ = 0;
 #pragma omp parallel for reduction(+ \
                                    : integ)
-    for (unsigned int i = start; i < end; ++i) {
-        double x_0 = spec->X(i);
-        double x_1 = spec->X(i + 1);
+    for (unsigned int i = start; i < end - 1; ++i) {
+        double x_0 = spec->x()[i];
+        double x_1 = spec->x()[i + 1];
         double offset_0 = Polynomial(x_0, coeff);
         double offset_1 = Polynomial(x_1, coeff);
-        double y_0 = spec->Y(i) - offset_0;
-        double y_1 = spec->Y(i + 1) - offset_1;
+        double y_0 = spec->y()[i] - offset_0;
+        double y_1 = spec->y()[i + 1] - offset_1;
         if (std::abs(y_0) < std::abs(y_1))
             integ += (x_1 - x_0) * y_0 + (x_1 - x_0) * (y_1 - y_0) / 2.0;
         else

@@ -275,7 +275,7 @@ public:
         }
 
         Vector vec = Vector::Map(&y[0], y.size());
-        spectrum spec(vec, m_spec->X(1), m_spec->X(m_spec->size()));
+        spectrum spec(m_spec->x(), vec);
         return spec;
     }
 

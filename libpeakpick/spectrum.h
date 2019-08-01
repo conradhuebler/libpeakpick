@@ -38,11 +38,13 @@ enum { Innovative = 1,
 class spectrum {
 
 public:
-    inline spectrum(const Vector& y, double min, double max)
-        : m_y(y)
-        , m_min(min)
-        , m_max(max)
+    inline spectrum(const Vector& x, const Vector& y)
+        : m_x(x)
+        , m_y(y)
     {
+        if (x.size() != y.size())
+            throw 2;
+
         Analyse();
     }
 
@@ -50,37 +52,36 @@ public:
 
     inline spectrum(const spectrum* other)
     {
+
+        m_x = other->m_x;
         m_y = other->m_y;
-        m_min = other->m_min;
-        m_max = other->m_max;
         Analyse();
     }
     inline spectrum(const spectrum& other)
     {
+        m_x = other.m_x;
         m_y = other.m_y;
-        m_min = other.m_min;
-        m_max = other.m_max;
         Analyse();
     }
 
     inline ~spectrum() {}
 
-    inline void setSpectrum(const Vector& y, double min, double max)
+    inline void setSpectrum(const Vector& x, const Vector& y)
     {
+        if (x.size() != y.size())
+            throw 2;
+
+        m_x = x;
         m_y = y;
-        m_min = min;
-        m_max = max;
         Analyse();
     }
 
     inline void setSpectrum(const Vector& y)
     {
-        if (y.size() == m_y.size())
-            m_y = y;
-        else {
-            std::cout << "not updating data" << std::endl;
-            return;
-        }
+        if (y.size() != m_y.size())
+            throw 3;
+
+        m_y = y;
         Analyse();
     }
 
@@ -130,29 +131,34 @@ public:
 
     inline double X(unsigned int i) const
     {
-#ifdef X
-        if (i >= m_x.size() || i < 0)
+        if (i > m_x.size())
             return 0;
         else
             return m_x(i);
-#else
-        return XFromIndex(i);
-#endif
     }
-    inline double Y(unsigned int i) const
+
+    inline double X(int i) const
     {
-        if (i > m_y.size() || i == 0)
+        if (i > m_x.size() && i < 0)
             return 0;
         else
-            return m_y(i - 1);
+            return m_x(i);
+    }
+
+    inline double Y(unsigned int i) const
+    {
+        if (i > m_y.size())
+            return 0;
+        else
+            return m_y(i);
     }
 
     inline double Y(int i) const
     {
-        if (i > m_y.size() || i <= 0)
+        if (i > m_y.size() && i < 0)
             return 0;
         else
-            return m_y(i - 1);
+            return m_y(i);
     }
 
     inline double Y(double x) const
@@ -165,25 +171,25 @@ public:
     {
         double step = Step();
         double diff = (x - XMin()) / step;
-        double val = diff + 1;
-        //         std::cout  << x << " "<< step << " " << x - XMin() << " " << diff  << " hier:"  <<val << std::endl;
-        //         std::cout << "dort: " <<val << std::endl;
+        int val = diff;
+        double m_diff = abs(x - m_x[val]);
+        for (int i = diff - 4; i < diff + 4 && i < m_x.size(); ++i) {
+            // std::cout << i << " " << m_x(i) << std::endl;
+            if (abs(x - m_x(i)) < m_diff) {
+                val = i;
+                m_diff = abs(x - m_x(i));
+            }
+        }
         return val;
-    }
-
-    inline double XFromIndex(unsigned int index) const
-    {
-        //         std::cout << "index" <<index << " XMin" << XMin() << " iStep" << index*Step() << std::endl;
-        return XMin() + (index - 1) * Step();
     }
 
     inline double Step() const
     {
-        return (XMax() - XMin()) / double(m_y.size() - 1);
+        return m_x[1] - m_x[0];
     }
 
-    inline double XMin() const { return m_min; }
-    inline double XMax() const { return m_max; }
+    inline double XMin() const { return m_x[0]; }
+    inline double XMax() const { return m_x[m_x.size() - 1]; }
 
     inline void setY(unsigned int i, double value) { m_y(i - 1) = value; }
 
@@ -197,25 +203,23 @@ public:
 
     inline spectrum* operator=(const spectrum* other)
     {
+        m_x = other->m_x;
         m_y = other->m_y;
-        m_min = other->m_min;
-        m_max = other->m_max;
         Analyse();
         return this;
     }
     inline spectrum& operator=(const spectrum& other)
     {
+        m_x = other.m_x;
         m_y = other.m_y;
-        m_min = other.m_min;
-        m_max = other.m_max;
         Analyse();
         return *this;
     }
 
     inline void print() const
     {
-        std::cout << m_y << std::endl;
-        unsigned int i = 0;
+        //std::cout << m_y << std::endl;
+        unsigned int i = 1;
         double step = Step();
         std::cout << "Step size " << step << " starting from " << XMin() << " to " << XMax() << " in " << size() << " steps." << std::endl;
         for (double x = XMin(); x <= XMax(); x += step) {
@@ -242,13 +246,14 @@ public:
         return m_y[m_y.size() - 1];
     }
 
+    inline Vector x() const { return m_x; }
+    inline Vector y() const { return m_y; }
+
 private:
     Vector m_y;
-#ifdef X
     Vector m_x;
-#endif
+
     double m_mean, m_stddev;
-    double m_min, m_max;
     unsigned int m_pos_min, m_pos_max;
 };
 }
