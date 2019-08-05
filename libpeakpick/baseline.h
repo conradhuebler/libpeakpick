@@ -436,8 +436,11 @@ private:
     BaseLineResult m_baselineresult;
 };
 
-inline void ResizeIntegrationRange(const spectrum *spec, Peak *peak, Vector baseline, int start, double threshold = 1e-6, int maxovershot = 10)
+inline void ResizeIntegrationRange(const spectrum* spec, Peak* peak, Vector baseline, int start, double threshold = 1e-6, int maxovershot = 10, int direction = 0, double gradient = 1e-3)
 {
+    if (direction != 0 && direction != -1)
+        direction = 0;
+
     double x_0 = spec->X(start);
     double offset_0 = Polynomial(x_0, baseline);
     double y_0 = spec->Y(start) - offset_0;
@@ -457,12 +460,19 @@ inline void ResizeIntegrationRange(const spectrum *spec, Peak *peak, Vector base
 
             if(sign != sign_0)
             {
-                peak->int_end = i;
+                peak->int_end = i + direction;
                 break;
             }
         }
-    }else{
-        for (unsigned int i = start; i < peak->end - 1; ++i) {
+    } else if (gradient < 1e-10) {
+        for (unsigned int i = start + 1; i < peak->end - 1; ++i) {
+            if (abs(spec->Y(i) - spec->Y(i - 1)) / (spec->X(i) - spec->X(i - 1)) < gradient) {
+                peak->int_end = i + direction;
+                break;
+            }
+        }
+    } else {
+        for (unsigned int i = start + 1; i < peak->end - 1; ++i) {
             double x = spec->X(i);
             double offset = Polynomial(x, baseline);
 
@@ -471,12 +481,14 @@ inline void ResizeIntegrationRange(const spectrum *spec, Peak *peak, Vector base
             counter += y < threshold;
 
             bool sign = std::signbit(spec->Y(i) - offset);
-
-            if (sign != sign_0 || counter > maxovershot) {
-                peak->int_end = i;
-                break;
+            if (abs(spec->Y(i) - spec->Y(i - 1)) / (spec->X(i) - spec->X(i - 1)) < gradient || gradient - 1) {
+                if (sign != sign_0 || counter > maxovershot) {
+                    peak->int_end = i + direction;
+                    break;
+                }
             }
         }
 }
+//std::cout << (spec->Y(peak->int_end)-spec->Y(peak->int_end - 1))/(spec->X(peak->int_end)-spec->X(peak->int_end - 1)) << std::endl;
 }
 }
