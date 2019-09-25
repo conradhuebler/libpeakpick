@@ -64,7 +64,7 @@ inline void Normalise(spectrum* spec, double min = 0.0, double max = 1.0)
     double maximum = spec->Max();
 
 #pragma omp parallel for
-    for (unsigned int i = 1; i <= spec->size(); ++i)
+    for (unsigned int i = 0; i < spec->size(); ++i)
         spec->setY(i, spec->Y(i) / maximum * max);
 
     spec->Analyse();
@@ -76,9 +76,9 @@ inline void SmoothFunction(spectrum* spec, unsigned int points)
     Vector vector(spec->size());
     double norm = SavitzkyGolayNorm(points);
     // #pragma omp parallel for
-    for (unsigned int i = 1; i <= spec->size(); ++i) {
+    for (unsigned int i = 1; i < spec->size(); ++i) {
         val = 0;
-        for (unsigned int j = 0; j <= points; ++j) {
+        for (unsigned int j = 0; j < points; ++j) {
             double coeff = SavitzkyGolayCoefficient(points, j);
             val += coeff * spec->Y(i + j) / norm;
             if (j)
@@ -229,6 +229,9 @@ inline double IntegrateNumerical(const std::vector<double>& x, const std::vector
 
 inline double IntegrateNumerical(const spectrum* spec, unsigned int start, unsigned int end, double offset = 0)
 {
+    if (end <= start)
+        return 0;
+
     if (end > spec->size() || spec->size() < start)
         return 0;
 
@@ -251,6 +254,9 @@ inline double IntegrateNumerical(const spectrum* spec, unsigned int start, unsig
 
 inline double IntegrateNumerical(const spectrum* spec, unsigned int start, unsigned int end, const Vector coeff)
 {
+
+    if (end <= start)
+        return 0;
 
     if (end > spec->size() || spec->size() < start)
         return 0;

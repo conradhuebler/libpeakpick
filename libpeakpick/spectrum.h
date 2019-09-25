@@ -48,6 +48,19 @@ public:
         Analyse();
     }
 
+    inline spectrum(const Vector& y, double start, double end)
+        : m_y(y)
+    {
+        double diff = end - start / double(y.size());
+        std::vector<double> entries;
+
+        for (double x = start; x < end; x += diff) {
+            entries.push_back(x);
+        }
+        m_x = Vector::Map(&entries[0], y.size());
+        Analyse();
+    }
+
     inline spectrum() {}
 
     inline spectrum(const spectrum* other)
@@ -121,7 +134,7 @@ public:
 
     inline double Mean() const { return m_mean; }
     inline double Max() const { return m_y(m_pos_max); }
-    inline int IndexMax() const { return m_pos_max; }
+    inline unsigned int IndexMax() const { return m_pos_max; }
     inline double PosMax() const { return X(m_pos_max); }
     inline unsigned int IndexMin() const { return m_pos_min; }
     inline double Min() const { return m_y(m_pos_min); }
@@ -131,7 +144,7 @@ public:
 
     inline double X(unsigned int i) const
     {
-        if (i > m_x.size())
+        if (i >= m_x.size())
             return 0;
         else
             return m_x(i);
@@ -139,7 +152,7 @@ public:
 
     inline double X(int i) const
     {
-        if (i > m_x.size() && i < 0)
+        if (i >= m_x.size() && i < 0)
             return 0;
         else
             return m_x(i);
@@ -147,7 +160,7 @@ public:
 
     inline double Y(unsigned int i) const
     {
-        if (i > m_y.size())
+        if (i >= m_y.size())
             return 0;
         else
             return m_y(i);
@@ -155,7 +168,7 @@ public:
 
     inline double Y(int i) const
     {
-        if (i > m_y.size() && i < 0)
+        if (i >= m_y.size() && i < 0)
             return 0;
         else
             return m_y(i);
@@ -194,7 +207,7 @@ public:
     inline double XMin() const { return m_x[0]; }
     inline double XMax() const { return m_x[m_x.size() - 1]; }
 
-    inline void setY(unsigned int i, double value) { m_y(i - 1) = value; }
+    inline void setY(unsigned int i, double value) { m_y(i) = value; }
 
     inline unsigned int size() const { return m_y.size(); }
 

@@ -95,7 +95,7 @@ struct LiberalGLFit : GaussianLorentzian<double> {
     inline unsigned int inputs() const { return no_parameter; }
     inline unsigned int values() const { return no_points; }
 
-    PeakPick::GLFit* m_glfit;
+    GLFit* m_glfit;
 };
 
 struct LiberalGLFitNumericalDiff : Eigen::NumericalDiff<LiberalGLFit> {
