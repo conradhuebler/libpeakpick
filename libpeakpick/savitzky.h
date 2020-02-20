@@ -1,6 +1,6 @@
 /*
  * <Savitzky-Golay-Filter Coeff containing Header file.>
- * Copyright (C) 2017  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2020 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -264,7 +264,7 @@ inline double SavitzkyGolayNorm(int points)
         norm = 3059;
     else if (points == 11)
         norm = 805;
-    else if (points == 12)
+    else // (points == 12)
         norm = 5175;
     return norm;
 }

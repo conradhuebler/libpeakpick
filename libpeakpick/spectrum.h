@@ -1,6 +1,6 @@
 /*
  * <Spectrum Header file.>
- * Copyright (C) 2017  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2020 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -158,6 +158,15 @@ public:
             return m_x(i);
     }
 
+    inline double X(std::size_t index) const
+    {
+        int i = static_cast<int>(index);
+        if (i >= m_x.size() && i < 0)
+            return 0;
+        else
+            return m_x(i);
+    }
+
     inline double Y(unsigned int i) const
     {
         if (i >= m_y.size())
@@ -168,6 +177,15 @@ public:
 
     inline double Y(int i) const
     {
+        if (i >= m_y.size() && i < 0)
+            return 0;
+        else
+            return m_y(i);
+    }
+
+    inline double Y(std::size_t index) const
+    {
+        int i = static_cast<int>(index);
         if (i >= m_y.size() && i < 0)
             return 0;
         else
@@ -266,10 +284,10 @@ public:
     inline Vector y() const { return m_y; }
 
 private:
-    Vector m_y;
-    Vector m_x;
+    Vector m_x, m_y;
 
-    double m_mean, m_stddev;
-    unsigned int m_pos_min, m_pos_max;
+    double m_mean = 0, m_stddev = 0;
+
+    unsigned int m_pos_min = 0, m_pos_max = 0;
 };
 }

@@ -1,6 +1,6 @@
 /*
  * <Math containing Header file.>
- * Copyright (C) 2017 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2020 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -91,11 +91,11 @@ struct LiberalGLFit : GaussianLorentzian<double> {
         return 0;
     }
 
+    GLFit* m_glfit;
     unsigned int no_parameter, no_points, start, end;
     inline unsigned int inputs() const { return no_parameter; }
     inline unsigned int values() const { return no_points; }
 
-    GLFit* m_glfit;
 };
 
 struct LiberalGLFitNumericalDiff : Eigen::NumericalDiff<LiberalGLFit> {
