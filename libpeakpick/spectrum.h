@@ -203,6 +203,8 @@ public:
         double step = Step();
         double diff = (x - XMin()) / step;
         int val = diff;
+        while (val >= m_x.size())
+            val -= 2 * step;
         double m_diff = abs(x - m_x[val]);
         for (int i = diff - 4; i < diff + 4 && i < m_x.size(); ++i) {
             // std::cout << i << " " << m_x(i) << std::endl;
