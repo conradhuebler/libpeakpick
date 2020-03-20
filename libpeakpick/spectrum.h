@@ -158,6 +158,8 @@ public:
             return m_x(i);
     }
 
+    /* Use this macros to support mingw on windows platforms */
+#ifndef _WIN32
     inline double X(std::size_t index) const
     {
         int i = static_cast<int>(index);
@@ -166,6 +168,7 @@ public:
         else
             return m_x(i);
     }
+#endif
 
     inline double Y(unsigned int i) const
     {
@@ -183,6 +186,7 @@ public:
             return m_y(i);
     }
 
+#ifndef _WIN32
     inline double Y(std::size_t index) const
     {
         int i = static_cast<int>(index);
@@ -191,6 +195,7 @@ public:
         else
             return m_y(i);
     }
+#endif
 
     inline double Y(double x) const
     {
@@ -200,11 +205,13 @@ public:
 
     inline int XtoIndex(double x) const
     {
+        if (x < XMin())
+            x = XMin();
         double step = Step();
         double diff = (x - XMin()) / step;
         int val = diff;
-        while (val >= m_x.size())
-            val -= 2 * step;
+        while (val >= m_x.size() && val <= 0)
+            val += -2 * step * (val >= m_x.size()) + 2 * step * val <= 0;
         double m_diff = abs(x - m_x[val]);
         for (int i = diff - 4; i < diff + 4 && i < m_x.size(); ++i) {
             // std::cout << i << " " << m_x(i) << std::endl;
