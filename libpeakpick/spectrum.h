@@ -159,7 +159,7 @@ public:
     }
 
     /* Use this macros to support mingw on windows platforms */
-#ifndef _WIN32
+/* #ifndef _WIN32
     inline double X(std::size_t index) const
     {
         int i = static_cast<int>(index);
@@ -169,7 +169,7 @@ public:
             return m_x(i);
     }
 #endif
-
+*/
     inline double Y(unsigned int i) const
     {
         if (i >= m_y.size())
@@ -185,7 +185,7 @@ public:
         else
             return m_y(i);
     }
-
+/*
 #ifndef _WIN32
     inline double Y(std::size_t index) const
     {
@@ -196,7 +196,7 @@ public:
             return m_y(i);
     }
 #endif
-
+*/
     inline double Y(double x) const
     {
         unsigned int i = XtoIndex(x);
