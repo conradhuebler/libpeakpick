@@ -104,7 +104,7 @@ public:
         m_stddev = stddev(m_y, m_mean);
     }
 
-    inline Vector getRangedSpectrum(unsigned int start, unsigned int end)
+    inline Vector getRangedSpectrum(unsigned int start, unsigned int end) const
     {
         Vector vector(end - start);
         if (start >= m_y.size() || end >= m_y.size())
@@ -114,7 +114,7 @@ public:
         return vector;
     }
 
-    inline Vector getRangedSpectrum(double start, double end)
+    inline Vector getRangedSpectrum(double start, double end) const
     {
         std::vector<double> entries;
 
