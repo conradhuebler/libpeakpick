@@ -118,8 +118,8 @@ public:
     {
         std::vector<double> entries;
 
-        if (start >= m_y.size() || end >= m_y.size())
-            return Vector(0);
+        //if (start >= m_y.size() || end >= m_y.size())
+        //return Vector(0);
         int number = 0;
         for (unsigned int i = 0; i < m_y.size(); ++i) {
             double val = X(i);
@@ -130,6 +130,23 @@ public:
         }
         Vector vector = Vector::Map(&entries[0], number);
         return vector;
+    }
+
+    inline std::vector<double> getRangedX(double start, double end) const
+    {
+        std::vector<double> entries;
+
+        //if (start >= m_y.size() || end >= m_y.size())
+        //return Vector(0);
+        int number = 0;
+        for (unsigned int i = 0; i < m_y.size(); ++i) {
+            double val = X(i);
+            if (val <= end && val >= start) {
+                entries.push_back(X(i));
+                number++;
+            }
+        }
+        return entries;
     }
 
     inline double Mean() const { return m_mean; }
