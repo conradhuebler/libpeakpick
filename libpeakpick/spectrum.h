@@ -229,8 +229,14 @@ public:
         int val = diff;
         while (val >= m_x.size() && val <= 0)
             val += -2 * step * (val >= m_x.size()) + 2 * step * val <= 0;
+
+        if (val >= m_x.size())
+            val = m_x.size() - 1;
+
         double m_diff = abs(x - m_x[val]);
         for (int i = diff - 4; i < diff + 4 && i < m_x.size(); ++i) {
+            while (i < 0)
+                x++;
             // std::cout << i << " " << m_x(i) << std::endl;
             if (abs(x - m_x(i)) < m_diff) {
                 val = i;
