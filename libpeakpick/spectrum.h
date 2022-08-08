@@ -1,6 +1,6 @@
 /*
  * <Spectrum Header file.>
- * Copyright (C) 2017  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2020 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -104,7 +104,7 @@ public:
         m_stddev = stddev(m_y, m_mean);
     }
 
-    inline Vector getRangedSpectrum(unsigned int start, unsigned int end)
+    inline Vector getRangedSpectrum(unsigned int start, unsigned int end) const
     {
         Vector vector(end - start);
         if (start >= m_y.size() || end >= m_y.size())
@@ -114,12 +114,12 @@ public:
         return vector;
     }
 
-    inline Vector getRangedSpectrum(double start, double end)
+    inline Vector getRangedSpectrum(double start, double end) const
     {
         std::vector<double> entries;
 
-        if (start >= m_y.size() || end >= m_y.size())
-            return Vector(0);
+        //if (start >= m_y.size() || end >= m_y.size())
+        //return Vector(0);
         int number = 0;
         for (unsigned int i = 0; i < m_y.size(); ++i) {
             double val = X(i);
@@ -130,6 +130,23 @@ public:
         }
         Vector vector = Vector::Map(&entries[0], number);
         return vector;
+    }
+
+    inline std::vector<double> getRangedX(double start, double end) const
+    {
+        std::vector<double> entries;
+
+        //if (start >= m_y.size() || end >= m_y.size())
+        //return Vector(0);
+        int number = 0;
+        for (unsigned int i = 0; i < m_y.size(); ++i) {
+            double val = X(i);
+            if (val <= end && val >= start) {
+                entries.push_back(X(i));
+                number++;
+            }
+        }
+        return entries;
     }
 
     inline double Mean() const { return m_mean; }
@@ -158,6 +175,18 @@ public:
             return m_x(i);
     }
 
+    /* Use this macros to support mingw on windows platforms */
+/* #ifndef _WIN32
+    inline double X(std::size_t index) const
+    {
+        int i = static_cast<int>(index);
+        if (i >= m_x.size() && i < 0)
+            return 0;
+        else
+            return m_x(i);
+    }
+#endif
+*/
     inline double Y(unsigned int i) const
     {
         if (i >= m_y.size())
@@ -173,7 +202,18 @@ public:
         else
             return m_y(i);
     }
-
+/*
+#ifndef _WIN32
+    inline double Y(std::size_t index) const
+    {
+        int i = static_cast<int>(index);
+        if (i >= m_y.size() && i < 0)
+            return 0;
+        else
+            return m_y(i);
+    }
+#endif
+*/
     inline double Y(double x) const
     {
         unsigned int i = XtoIndex(x);
@@ -182,11 +222,21 @@ public:
 
     inline int XtoIndex(double x) const
     {
+        if (x < XMin())
+            x = XMin();
         double step = Step();
         double diff = (x - XMin()) / step;
         int val = diff;
+        while (val >= m_x.size() && val <= 0)
+            val += -2 * step * (val >= m_x.size()) + 2 * step * val <= 0;
+
+        if (val >= m_x.size())
+            val = m_x.size() - 1;
+
         double m_diff = abs(x - m_x[val]);
         for (int i = diff - 4; i < diff + 4 && i < m_x.size(); ++i) {
+            while (i < 0)
+                x++;
             // std::cout << i << " " << m_x(i) << std::endl;
             if (abs(x - m_x(i)) < m_diff) {
                 val = i;
@@ -266,10 +316,10 @@ public:
     inline Vector y() const { return m_y; }
 
 private:
-    Vector m_y;
-    Vector m_x;
+    Vector m_x, m_y;
 
-    double m_mean, m_stddev;
-    unsigned int m_pos_min, m_pos_max;
+    double m_mean = 0, m_stddev = 0;
+
+    unsigned int m_pos_min = 0, m_pos_max = 0;
 };
 }
