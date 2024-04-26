@@ -51,7 +51,7 @@ public:
     inline spectrum(const Vector& y, double start, double end)
         : m_y(y)
     {
-        double diff = end - start / double(y.size());
+        double diff = (end - start) / double(y.size());
         std::vector<double> entries;
 
         for (double x = start; x < end; x += diff) {
