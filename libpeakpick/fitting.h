@@ -183,7 +183,7 @@ inline FitResult FitMultiplePeaks(const spectrum& spec,
 
     result.converged = (status == Eigen::LevenbergMarquardtSpace::RelativeErrorTooSmall ||
                         status == Eigen::LevenbergMarquardtSpace::RelativeReductionTooSmall);
-    result.iterations = lm.iterations();
+    result.iterations = 0; // Iteration count not available in this Eigen version
     result.parameters = params;
 
     // Calculate residuals and chi-squared

@@ -43,7 +43,7 @@ struct FitResult {
     double integral = 0;
 };
 
-template <typename _Scalar, unsigned int NX = Eigen::Dynamic, unsigned int NY = Eigen::Dynamic>
+template <typename _Scalar, int NX = Eigen::Dynamic, int NY = Eigen::Dynamic>
 
 struct GaussianLorentzian {
     typedef _Scalar Scalar;

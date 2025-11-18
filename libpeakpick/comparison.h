@@ -26,6 +26,7 @@
 #include <iostream>
 #include <vector>
 
+#include "analyse.h"
 #include "mathhelper.h"
 #include "spectrum.h"
 #include "utilities.h"

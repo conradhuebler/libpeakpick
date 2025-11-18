@@ -29,6 +29,7 @@
 #include "analyse.h"
 #include "baseline.h"
 #include "logger.h"
+#include "peakpick.h"
 #include "spectrum.h"
 
 namespace PeakPick {

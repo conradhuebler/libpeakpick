@@ -27,6 +27,7 @@
 #include <string>
 
 #include "spectrum.h"
+#include "analyse.h"
 
 typedef Eigen::VectorXd Vector;
 
