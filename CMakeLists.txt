@@ -36,8 +36,11 @@ set(libpeakpick_SRC
 )
 
 add_executable(libpeakpick ${libpeakpick_SRC})
-
 set_property(TARGET libpeakpick PROPERTY CXX_STANDARD 11)
+
+# Build CLI tool
+add_executable(peakpick_cli peakpick_cli.cpp)
+set_property(TARGET peakpick_cli PROPERTY CXX_STANDARD 11)
 
 # Option to build tests
 option(BUILD_TESTS "Build unit tests" ON)
@@ -47,4 +50,11 @@ if(BUILD_TESTS)
     add_subdirectory(tests)
 endif()
 
-install(TARGETS libpeakpick RUNTIME DESTINATION bin)
+# Option to build examples
+option(BUILD_EXAMPLES "Build example programs" ON)
+
+if(BUILD_EXAMPLES)
+    add_subdirectory(examples)
+endif()
+
+install(TARGETS libpeakpick peakpick_cli RUNTIME DESTINATION bin)

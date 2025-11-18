@@ -14,13 +14,18 @@
 
 ### Key Features
 - Spectral analysis and statistics (mean, max, min, stddev)
-- Peak picking and detection
-- Baseline correction algorithms
-- Gaussian and Lorentzian curve fitting
-- Savitzky-Golay smoothing
-- Linear regression
-- Deconvolution
-- File I/O for spectral data
+- Peak picking and detection (basic and advanced with prominence)
+- Baseline correction algorithms (including AsLS)
+- Gaussian/Lorentzian/PseudoVoigt curve fitting (single and multi-peak)
+- Savitzky-Golay smoothing and signal processing
+- FFT-based operations and derivatives
+- Spectrum comparison metrics (RMSD, correlation, cosine similarity)
+- CSV and JSON import/export
+- Batch processing framework
+- Command-line interface tool
+- Logging system with color support
+- Linear regression and deconvolution
+- Python bindings guide
 
 ## Repository Structure
 
@@ -30,12 +35,18 @@ libpeakpick/
 │   ├── analyse.h          # Analysis algorithms (IMPROVED)
 │   ├── advanced.h         # Advanced algorithms (NEW: AsLS, prominence, splines)
 │   ├── baseline.h         # Baseline correction methods (IMPROVED)
+│   ├── batch.h            # Batch processing framework (NEW)
+│   ├── comparison.h       # Spectrum comparison metrics (NEW)
 │   ├── deconvulate.h      # Deconvolution algorithms
+│   ├── export.h           # CSV/JSON import/export (NEW)
+│   ├── fitting.h          # Multi-peak fitting (NEW)
 │   ├── glfit.h            # Gaussian/Lorentzian fitting
+│   ├── logger.h           # Logging system (NEW)
 │   ├── mathhelper.h       # Mathematical utilities
 │   ├── nxlinregress.h     # N-dimensional linear regression
 │   ├── peakpick.h         # Main header with file loading utilities
 │   ├── savitzky.h         # Savitzky-Golay filter implementation
+│   ├── signal.h           # Signal processing (FFT, derivatives, filters) (NEW)
 │   ├── spectrum.h         # Core spectrum class and operations (IMPROVED)
 │   └── utilities.h        # Utility functions (save, SNR, FWHM, etc.)
 ├── tests/                 # Unit tests (CMake/CTest based)
@@ -48,6 +59,12 @@ libpeakpick/
 │   ├── test_peakpick.cpp  # File I/O tests
 │   ├── test_integration.cpp # Integration tests
 │   └── test_advanced.cpp  # Tests for advanced algorithms (NEW)
+├── examples/              # Example programs (NEW)
+│   ├── CMakeLists.txt     # Examples build configuration
+│   ├── example_batch.cpp  # Batch processing example
+│   ├── example_comparison.cpp # Spectrum comparison example
+│   ├── example_export.cpp # Import/export formats example
+│   └── example_fitting.cpp # Multi-peak fitting example
 ├── src/                   # Test/example source files
 │   ├── testLorentzian.h
 │   └── testLorentzian.cpp
@@ -56,8 +73,10 @@ libpeakpick/
 │   └── lorentzian_2
 ├── eigen/                 # Eigen library (git submodule)
 ├── main.cpp               # Example usage and demos
+├── peakpick_cli.cpp       # Command-line interface tool (NEW)
 ├── CMakeLists.txt         # CMake build configuration
 ├── .clang-format          # Code formatting rules
+├── PYTHON_BINDINGS.md     # Guide for Python bindings (NEW)
 └── README.md              # Basic usage instructions
 ```
 
@@ -232,6 +251,477 @@ std::vector<Peak> peaks = PickPeaks(&spec, threshold);
 std::vector<Peak> peaks = PickPeaksAdvanced(&spec, threshold,
     0.5,  // min_prominence - adjust for your data
     5);   // min_distance - minimum 5 points between peaks
+```
+
+### Multi-Peak Fitting (fitting.h)
+
+Advanced curve fitting for overlapping peaks with error estimation and multiple peak types.
+
+**Include**: `#include "libpeakpick/fitting.h"`
+
+**Features**:
+- Fit multiple peaks simultaneously
+- Support for Gaussian, Lorentzian, and Pseudo-Voigt profiles
+- Error estimation via covariance matrix
+- Chi-squared goodness-of-fit statistics
+- Convergence diagnostics
+
+**Usage Example**:
+```cpp
+// Load spectrum and find peaks
+PeakPick::spectrum spec = loadFromFile("data.txt");
+std::vector<Peak> peaks = PeakPick::PickPeaksAdvanced(&spec, 0.5, 1.0);
+
+// Fit multiple Gaussian peaks
+auto result = PeakPick::FitMultiplePeaks(spec, peaks,
+    PeakPick::FitType::Gaussian,  // or Lorentzian, PseudoVoigt
+    100);  // max iterations
+
+// Check convergence
+if (result.converged) {
+    std::cout << "Chi-squared: " << result.chi_squared << std::endl;
+    std::cout << "Reduced chi-squared: " << result.reduced_chi_squared << std::endl;
+
+    // Extract parameter errors
+    Vector errors = PeakPick::ExtractParameterErrors(result);
+
+    // Access fitted peaks
+    for (const auto& peak : result.fitted_peaks) {
+        std::cout << "Peak at " << peak.max << " with area " << peak.integ_num << std::endl;
+    }
+}
+```
+
+**API Reference**:
+```cpp
+enum class FitType {
+    Gaussian,      // Gaussian profile
+    Lorentzian,    // Lorentzian profile
+    PseudoVoigt    // Pseudo-Voigt (mixed Gaussian/Lorentzian)
+};
+
+struct FitResult {
+    Vector parameters;           // Fitted parameters (height, center, width for each peak)
+    Eigen::MatrixXd covariance; // Covariance matrix for error estimation
+    Vector residuals;           // Fit residuals
+    double chi_squared;         // Chi-squared statistic
+    double reduced_chi_squared; // Reduced chi-squared (chi²/dof)
+    int iterations;             // Number of iterations performed
+    bool converged;             // Convergence status
+    std::vector<Peak> fitted_peaks; // Peak structures with fitted parameters
+};
+
+FitResult FitMultiplePeaks(const spectrum& spec,
+    const std::vector<Peak>& peaks,
+    FitType fit_type = FitType::Gaussian,
+    int max_iter = 100);
+
+Vector ExtractParameterErrors(const FitResult& result);
+```
+
+### Spectrum Comparison (comparison.h)
+
+Quantitative metrics for comparing spectra and peak lists.
+
+**Include**: `#include "libpeakpick/comparison.h"`
+
+**Features**:
+- Multiple similarity metrics (RMSD, correlation, cosine similarity)
+- Spectral alignment for drift correction
+- Peak matching between spectra
+- Spectral angle calculation
+
+**Usage Example**:
+```cpp
+// Load two spectra
+PeakPick::spectrum spec1 = loadFromFile("sample1.txt");
+PeakPick::spectrum spec2 = loadFromFile("sample2.txt");
+
+// Calculate similarity metrics
+double rmsd = PeakPick::RMSD(spec1, spec2);
+double corr = PeakPick::CorrelationCoefficient(spec1, spec2);
+double cos_sim = PeakPick::CosineSimilarity(spec1, spec2);
+double angle = PeakPick::SpectralAngle(spec1, spec2);
+double mae = PeakPick::MAE(spec1, spec2);
+
+std::cout << "RMSD: " << rmsd << std::endl;
+std::cout << "Correlation: " << corr << std::endl;
+std::cout << "Cosine Similarity: " << cos_sim << std::endl;
+std::cout << "Spectral Angle: " << angle << "°" << std::endl;
+
+// Align spectra (correct for X-axis drift)
+PeakPick::spectrum aligned = PeakPick::AlignSpectra(spec1, spec2,
+    10.0,  // search range
+    0.1);  // step size
+
+// Compare peak lists
+std::vector<Peak> peaks1 = PeakPick::PickPeaksAdvanced(&spec1, 0.5);
+std::vector<Peak> peaks2 = PeakPick::PickPeaksAdvanced(&spec2, 0.5);
+int matching_peaks = PeakPick::ComparePeaks(peaks1, peaks2, 1.0);  // tolerance
+```
+
+**API Reference**:
+```cpp
+double RMSD(const spectrum& spec1, const spectrum& spec2);
+double CorrelationCoefficient(const spectrum& spec1, const spectrum& spec2);
+double CosineSimilarity(const spectrum& spec1, const spectrum& spec2);
+double MAE(const spectrum& spec1, const spectrum& spec2);
+double SpectralAngle(const spectrum& spec1, const spectrum& spec2);
+spectrum AlignSpectra(const spectrum& spec1, const spectrum& spec2,
+    double search_range = 10.0, double step = 0.1);
+int ComparePeaks(const std::vector<Peak>& peaks1,
+    const std::vector<Peak>& peaks2, double tolerance = 1.0);
+```
+
+### Export Formats (export.h)
+
+Import and export spectra and peaks in standard formats.
+
+**Include**: `#include "libpeakpick/export.h"`
+
+**Features**:
+- CSV import/export with customizable delimiters
+- JSON import/export with metadata
+- Peak list export
+- Header and precision control
+
+**Usage Example**:
+```cpp
+// Export spectrum to CSV
+PeakPick::CSVOptions csv_opts;
+csv_opts.include_header = true;
+csv_opts.delimiter = ',';
+csv_opts.precision = 6;
+PeakPick::ExportCSV(spec, "output.csv", csv_opts);
+
+// Export to JSON with metadata
+PeakPick::ExportJSON(spec, "output.json", true);
+
+// Export peaks to CSV
+std::vector<Peak> peaks = PeakPick::PickPeaksAdvanced(&spec, 0.5);
+PeakPick::ExportPeaksCSV(peaks, "peaks.csv", csv_opts);
+PeakPick::ExportPeaksJSON(peaks, "peaks.json");
+
+// Import from CSV
+PeakPick::spectrum imported = PeakPick::ImportCSV("data.csv", true, ',');
+```
+
+**API Reference**:
+```cpp
+struct CSVOptions {
+    bool include_header = true;
+    char delimiter = ',';
+    int precision = 6;
+};
+
+bool ExportCSV(const spectrum& spec, const std::string& filename,
+    const CSVOptions& options = CSVOptions());
+bool ExportPeaksCSV(const std::vector<Peak>& peaks, const std::string& filename,
+    const CSVOptions& options = CSVOptions());
+bool ExportJSON(const spectrum& spec, const std::string& filename,
+    bool include_metadata = true);
+bool ExportPeaksJSON(const std::vector<Peak>& peaks, const std::string& filename);
+spectrum ImportCSV(const std::string& filename, bool has_header = true,
+    char delimiter = ',');
+```
+
+### Signal Processing (signal.h)
+
+FFT-based operations, derivatives, and filtering.
+
+**Include**: `#include "libpeakpick/signal.h"`
+
+**Features**:
+- First and second derivatives
+- Peak detection via second derivative
+- Low-pass filtering
+- FFT power spectrum
+- Convolution
+
+**Usage Example**:
+```cpp
+// Calculate derivatives
+PeakPick::spectrum first_deriv = PeakPick::FirstDerivative(spec);
+PeakPick::spectrum second_deriv = PeakPick::SecondDerivative(spec);
+
+// Find peaks using second derivative
+std::vector<Peak> peaks = PeakPick::PickPeaksSecondDerivative(spec,
+    0.0,    // intensity threshold
+    -0.1);  // derivative threshold (negative for maxima)
+
+// Apply low-pass filter
+PeakPick::spectrum filtered = PeakPick::LowPassFilter(spec, 0.1);
+
+// Calculate power spectrum (FFT magnitude)
+PeakPick::spectrum power = PeakPick::PowerSpectrum(spec);
+
+// Convolve two spectra
+PeakPick::spectrum convolved = PeakPick::Convolve(spec1, spec2);
+```
+
+**API Reference**:
+```cpp
+spectrum FirstDerivative(const spectrum& spec);
+spectrum SecondDerivative(const spectrum& spec);
+std::vector<Peak> PickPeaksSecondDerivative(const spectrum& spec,
+    double threshold = 0.0, double deriv_threshold = -0.1);
+spectrum LowPassFilter(const spectrum& spec, double cutoff_freq = 0.1);
+spectrum PowerSpectrum(const spectrum& spec);
+spectrum Convolve(const spectrum& spec1, const spectrum& spec2);
+```
+
+### Logging System (logger.h)
+
+Centralized logging with configurable levels and color output.
+
+**Include**: `#include "libpeakpick/logger.h"`
+
+**Features**:
+- Multiple log levels (Debug, Info, Warning, Error)
+- Color-coded console output
+- Context information (function names)
+- Global level control
+- Convenient macros
+
+**Usage Example**:
+```cpp
+// Set logging level
+PeakPick::Logger::setLevel(PeakPick::LogLevel::Info);
+
+// Enable/disable colors
+PeakPick::Logger::setColors(true);
+
+// Log messages
+PeakPick::Logger::info("Processing started", "main");
+PeakPick::Logger::warning("Low SNR detected", "analyzeSpectrum");
+PeakPick::Logger::error("File not found", "loadData");
+
+// Use convenient macros (automatically includes function name)
+LOG_INFO("Peak detection complete");
+LOG_WARNING("Threshold may be too low");
+LOG_ERROR("Invalid parameter");
+```
+
+**API Reference**:
+```cpp
+enum class LogLevel {
+    Debug = 0,
+    Info = 1,
+    Warning = 2,
+    Error = 3,
+    None = 4
+};
+
+class Logger {
+    static void setLevel(LogLevel level);
+    static LogLevel getLevel();
+    static void setColors(bool enable);
+    static void log(LogLevel level, const std::string& message,
+        const std::string& context = "");
+    static void debug(const std::string& message, const std::string& context = "");
+    static void info(const std::string& message, const std::string& context = "");
+    static void warning(const std::string& message, const std::string& context = "");
+    static void error(const std::string& message, const std::string& context = "");
+};
+
+// Macros
+#define LOG_DEBUG(msg) PeakPick::Logger::debug(msg, __FUNCTION__)
+#define LOG_INFO(msg) PeakPick::Logger::info(msg, __FUNCTION__)
+#define LOG_WARNING(msg) PeakPick::Logger::warning(msg, __FUNCTION__)
+#define LOG_ERROR(msg) PeakPick::Logger::error(msg, __FUNCTION__)
+```
+
+### Batch Processing (batch.h)
+
+Fluent interface for processing multiple spectra with consistent parameters.
+
+**Include**: `#include "libpeakpick/batch.h"`
+
+**Features**:
+- Fluent/chainable API
+- Automatic error handling
+- Success/failure tracking
+- Custom operation support
+- Peak finding across batches
+
+**Usage Example**:
+```cpp
+// Create batch processor
+PeakPick::BatchProcessor processor;
+
+// Add files
+processor.addFile("sample1.txt")
+         .addFile("sample2.txt")
+         .addFile("sample3.txt");
+
+// Or add multiple files
+std::vector<std::string> files = {"data1.txt", "data2.txt", "data3.txt"};
+processor.addFiles(files);
+
+// Chain operations (fluent interface)
+auto results = processor
+    .smooth(5)              // Savitzky-Golay smoothing
+    .normalize(0.0, 1.0)    // Normalize to [0,1]
+    .baselineCorrect(1e6, 0.01)  // AsLS baseline correction
+    .process();
+
+// Check results
+std::cout << "Processed: " << results.total_processed << std::endl;
+std::cout << "Failed: " << results.total_failed << std::endl;
+
+// Process and find peaks
+auto results_with_peaks = processor
+    .smooth(5)
+    .normalize()
+    .processAndFindPeaks(0.5,  // threshold
+                         1.0,  // prominence
+                         5);   // min_distance
+
+// Access results
+for (size_t i = 0; i < results_with_peaks.spectra.size(); ++i) {
+    if (results_with_peaks.success[i]) {
+        std::cout << "File: " << results_with_peaks.filenames[i] << std::endl;
+        std::cout << "Peaks found: " << results_with_peaks.all_peaks[i].size() << std::endl;
+    }
+}
+
+// Apply custom operation
+processor.apply([](PeakPick::spectrum& spec) {
+    // Custom processing
+    spec.center();
+    PeakPick::SmoothFunction(&spec, 3);
+});
+```
+
+**API Reference**:
+```cpp
+struct BatchResults {
+    std::vector<spectrum> spectra;
+    std::vector<std::vector<Peak>> all_peaks;
+    std::vector<std::string> filenames;
+    std::vector<bool> success;
+    int total_processed = 0;
+    int total_failed = 0;
+};
+
+class BatchProcessor {
+    BatchProcessor& addFile(const std::string& filename);
+    BatchProcessor& addFiles(const std::vector<std::string>& filenames);
+    BatchProcessor& smooth(unsigned int points);
+    BatchProcessor& normalize(double min = 0.0, double max = 1.0);
+    BatchProcessor& baselineCorrect(double lambda = 1e6, double p = 0.01);
+    BatchProcessor& apply(std::function<void(spectrum&)> operation);
+    BatchResults process();
+    BatchResults processAndFindPeaks(double threshold,
+        double min_prominence = 0.0, unsigned int min_distance = 1);
+};
+```
+
+### Command-Line Interface (peakpick_cli)
+
+Standalone CLI tool for common spectral analysis tasks.
+
+**Building**:
+```bash
+cd build
+cmake ..
+make
+./peakpick_cli help
+```
+
+**Commands**:
+- `analyze <file>` - Analyze single spectrum with statistics
+- `batch <files...>` - Batch process multiple files
+- `compare <file1> <file2>` - Compare two spectra
+- `peaks <file>` - Find and export peaks
+- `help` - Show usage information
+
+**Options**:
+- `--smooth <N>` - Apply Savitzky-Golay smoothing (N points)
+- `--baseline <lambda>` - Apply AsLS baseline correction
+- `--normalize` - Normalize to [0,1]
+- `--threshold <val>` - Peak detection threshold
+- `--prominence <val>` - Minimum peak prominence
+- `--output <file>` - Output filename or directory
+- `--verbose` - Verbose output
+
+**Usage Examples**:
+```bash
+# Analyze spectrum with smoothing and normalization
+./peakpick_cli analyze data.txt --smooth 5 --normalize
+
+# Batch process with baseline correction
+./peakpick_cli batch *.txt --baseline 1e6 --output results/
+
+# Find peaks with prominence filtering
+./peakpick_cli peaks data.txt --threshold 0.5 --prominence 1.0 --output peaks.json
+
+# Compare two spectra
+./peakpick_cli compare sample1.txt sample2.txt
+```
+
+### Examples Directory
+
+Four complete example programs demonstrating library features.
+
+**Building Examples**:
+```bash
+cd build
+cmake -DBUILD_EXAMPLES=ON ..
+make
+```
+
+**Available Examples**:
+
+1. **example_batch.cpp** - Batch processing demonstration
+   ```bash
+   ./examples/example_batch
+   ```
+   Demonstrates: BatchProcessor, fluent API, error handling
+
+2. **example_fitting.cpp** - Multi-peak fitting demonstration
+   ```bash
+   ./examples/example_fitting
+   ```
+   Demonstrates: FitMultiplePeaks, FitType options, error estimation
+
+3. **example_comparison.cpp** - Spectrum comparison
+   ```bash
+   ./examples/example_comparison
+   ```
+   Demonstrates: RMSD, correlation, alignment, peak matching
+
+4. **example_export.cpp** - Import/export formats
+   ```bash
+   ./examples/example_export
+   ```
+   Demonstrates: CSV/JSON export, import, peak export
+
+### Python Bindings
+
+See `PYTHON_BINDINGS.md` for comprehensive guide on creating Python bindings using pybind11.
+
+**Quick Start**:
+```python
+# After building Python bindings (see PYTHON_BINDINGS.md)
+import libpeakpick as pp
+import numpy as np
+
+# Create spectrum
+x = np.linspace(0, 100, 1000)
+y = np.exp(-((x - 50)**2) / 100) + 0.1 * np.random.randn(1000)
+spec = pp.Spectrum(x, y)
+
+# Analyze
+print(f"Mean: {spec.mean()}")
+print(f"Max: {spec.max()}")
+
+# Find peaks
+peaks = pp.pick_peaks_advanced(spec, threshold=0.5, min_prominence=1.0)
+print(f"Found {len(peaks)} peaks")
+
+# Export
+pp.export_json(spec, "output.json")
 ```
 
 ## Code Conventions
