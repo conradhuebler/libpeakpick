@@ -35,7 +35,17 @@ libpeakpick/
 │   ├── nxlinregress.h     # N-dimensional linear regression
 │   ├── peakpick.h         # Main header with file loading utilities
 │   ├── savitzky.h         # Savitzky-Golay filter implementation
-│   └── spectrum.h         # Core spectrum class and operations
+│   ├── spectrum.h         # Core spectrum class and operations
+│   └── utilities.h        # Utility functions (save, SNR, FWHM, etc.)
+├── tests/                 # Unit tests (CMake/CTest based)
+│   ├── CMakeLists.txt     # Test build configuration
+│   ├── test_spectrum.cpp  # Spectrum class tests
+│   ├── test_mathhelper.cpp # Math helper function tests
+│   ├── test_analyse.cpp   # Analysis function tests
+│   ├── test_baseline.cpp  # Baseline correction tests
+│   ├── test_savitzky.cpp  # Savitzky-Golay filter tests
+│   ├── test_peakpick.cpp  # File I/O tests
+│   └── test_integration.cpp # Integration tests
 ├── src/                   # Test/example source files
 │   ├── testLorentzian.h
 │   └── testLorentzian.cpp
@@ -85,10 +95,43 @@ Since this is a header-only library, integration is simple:
 
 ### Running Tests
 
+The project includes comprehensive unit tests using CMake's CTest framework:
+
 ```bash
-# Build and run the example executable
-./libpeakpick
+# Build with tests enabled (default)
+mkdir build
+cd build
+cmake ..
+make
+
+# Run all tests
+ctest
+
+# Run tests with verbose output
+ctest --verbose
+
+# Run specific test
+./tests/test_spectrum
+
+# Run tests in parallel
+ctest -j4
 ```
+
+To disable building tests:
+```bash
+cmake -DBUILD_TESTS=OFF ..
+```
+
+### Test Coverage
+
+The test suite includes:
+- **test_spectrum**: Tests for the spectrum class (constructors, accessors, operations)
+- **test_mathhelper**: Tests for mathematical functions (mean, stddev, Gaussian, Lorentzian, etc.)
+- **test_analyse**: Tests for analysis functions (peak finding, integration, normalization)
+- **test_baseline**: Tests for baseline correction structures and algorithms
+- **test_savitzky**: Tests for Savitzky-Golay filter coefficients
+- **test_peakpick**: Tests for file I/O operations
+- **test_integration**: End-to-end integration tests for complete workflows
 
 ## Code Conventions
 
@@ -173,9 +216,36 @@ These likely control peak picking sensitivity/threshold levels.
 
 ### Utility Functions
 
+#### File I/O (peakpick.h)
 ```cpp
-// Load spectrum from file (in peakpick.h)
+// Load spectrum from file
 PeakPick::spectrum loadFromFile(const std::string& filename, double min = 0, double max = 0);
+```
+
+#### Enhanced Utilities (utilities.h)
+```cpp
+// Save spectrum to file
+bool saveToFile(const spectrum& spec, const std::string& filename, bool save_x = true);
+
+// Calculate signal-to-noise ratio
+double calculateSNR(const spectrum& spec,
+    unsigned int peak_region_start, unsigned int peak_region_end,
+    unsigned int noise_region_start, unsigned int noise_region_end);
+
+// Find baseline points automatically
+std::vector<unsigned int> findBaselinePoints(const spectrum& spec,
+    unsigned int num_points, double percentile = 0.1);
+
+// Resample spectrum to new X grid
+spectrum resample(const spectrum& spec, const Vector& new_x);
+
+// Calculate full width at half maximum (FWHM)
+double calculateFWHM(const spectrum& spec, const Peak& peak);
+
+// Spectrum arithmetic
+spectrum subtract(const spectrum& spec1, const spectrum& spec2);
+spectrum add(const spectrum& spec1, const spectrum& spec2);
+spectrum scale(const spectrum& spec, double factor);
 ```
 
 ## Dependencies
@@ -256,12 +326,46 @@ git submodule update --init --recursive
 3. Create functor struct with `InputType`, `ValueType`, `operator()`
 4. Implement fit function that uses Eigen's LevenbergMarquardt solver
 
-### Testing Changes
+### Writing Unit Tests
 
-1. Add test case to `main.cpp` or create new file in `src/`
-2. Use sample data from `samples/` directory
-3. Build and run: `./libpeakpick`
-4. Verify output matches expectations
+When adding new features, always add corresponding tests:
+
+1. **Create test file**: Add `test_<feature>.cpp` in `tests/` directory
+2. **Follow test structure**:
+   ```cpp
+   #include "libpeakpick/<header>.h"
+   #include <iostream>
+   #include <cmath>
+
+   #define TEST_ASSERT(condition, message) \
+       if (!(condition)) { \
+           std::cerr << "FAILED: " << message << std::endl; \
+           return 1; \
+       }
+
+   #define TEST_ASSERT_NEAR(val1, val2, epsilon, message) \
+       if (std::abs((val1) - (val2)) > (epsilon)) { \
+           std::cerr << "FAILED: " << message << std::endl; \
+           return 1; \
+       }
+
+   int main() {
+       // Test code here
+       std::cout << "All tests passed!" << std::endl;
+       return 0;
+   }
+   ```
+
+3. **Add to CMakeLists.txt**: Update `tests/CMakeLists.txt` to include new test
+4. **Build and run**:
+   ```bash
+   cd build
+   make
+   ctest --verbose
+   ```
+
+5. **Test naming**: Use descriptive test names and verify edge cases
+6. **Use sample data**: Leverage files in `samples/` directory for realistic tests
 
 ### Debugging Tips
 

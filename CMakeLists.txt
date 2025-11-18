@@ -39,5 +39,12 @@ add_executable(libpeakpick ${libpeakpick_SRC})
 
 set_property(TARGET libpeakpick PROPERTY CXX_STANDARD 11)
 
+# Option to build tests
+option(BUILD_TESTS "Build unit tests" ON)
+
+if(BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
+endif()
 
 install(TARGETS libpeakpick RUNTIME DESTINATION bin)
