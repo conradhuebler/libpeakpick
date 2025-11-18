@@ -27,6 +27,7 @@ add_executable(test_baseline test_baseline.cpp)
 add_executable(test_savitzky test_savitzky.cpp)
 add_executable(test_peakpick test_peakpick.cpp)
 add_executable(test_integration test_integration.cpp)
+add_executable(test_advanced test_advanced.cpp)
 
 # Set C++11 for all test targets
 set_property(TARGET test_spectrum PROPERTY CXX_STANDARD 11)
@@ -36,6 +37,7 @@ set_property(TARGET test_baseline PROPERTY CXX_STANDARD 11)
 set_property(TARGET test_savitzky PROPERTY CXX_STANDARD 11)
 set_property(TARGET test_peakpick PROPERTY CXX_STANDARD 11)
 set_property(TARGET test_integration PROPERTY CXX_STANDARD 11)
+set_property(TARGET test_advanced PROPERTY CXX_STANDARD 11)
 
 # Register tests with CTest
 add_test(NAME SpectrumTests COMMAND test_spectrum)
@@ -45,3 +47,4 @@ add_test(NAME BaselineTests COMMAND test_baseline)
 add_test(NAME SavitzkyTests COMMAND test_savitzky)
 add_test(NAME PeakPickTests COMMAND test_peakpick)
 add_test(NAME IntegrationTests COMMAND test_integration)
+add_test(NAME AdvancedTests COMMAND test_advanced)

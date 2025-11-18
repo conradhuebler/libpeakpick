@@ -222,28 +222,64 @@ public:
 
     inline int XtoIndex(double x) const
     {
-        if (x < XMin())
-            x = XMin();
+        // Handle edge cases
+        if (m_x.size() == 0)
+            return 0;
+        if (m_x.size() == 1)
+            return 0;
+
+        // Clamp to valid range
+        if (x <= XMin())
+            return 0;
+        if (x >= XMax())
+            return m_x.size() - 1;
+
+        // For uniform grids, use fast calculation
         double step = Step();
-        double diff = (x - XMin()) / step;
-        int val = diff;
-        while (val >= m_x.size() && val <= 0)
-            val += -2 * step * (val >= m_x.size()) + 2 * step * val <= 0;
+        if (step > 0) {
+            double diff = (x - XMin()) / step;
+            int val = static_cast<int>(diff);
 
-        if (val >= m_x.size())
-            val = m_x.size() - 1;
+            // Bounds check
+            if (val < 0)
+                val = 0;
+            if (val >= static_cast<int>(m_x.size()))
+                val = m_x.size() - 1;
 
-        double m_diff = abs(x - m_x[val]);
-        for (int i = diff - 4; i < diff + 4 && i < m_x.size(); ++i) {
-            while (i < 0)
-                x++;
-            // std::cout << i << " " << m_x(i) << std::endl;
-            if (abs(x - m_x(i)) < m_diff) {
-                val = i;
-                m_diff = abs(x - m_x(i));
+            // Fine-tune by checking neighbors
+            double m_diff = std::abs(x - m_x[val]);
+
+            // Check up to ±4 neighbors for non-uniform grids
+            int search_start = std::max(0, val - 4);
+            int search_end = std::min(static_cast<int>(m_x.size()), val + 5);
+
+            for (int i = search_start; i < search_end; ++i) {
+                double current_diff = std::abs(x - m_x[i]);
+                if (current_diff < m_diff) {
+                    val = i;
+                    m_diff = current_diff;
+                }
             }
+            return val;
         }
-        return val;
+
+        // Fallback: binary search for non-uniform grids
+        int left = 0;
+        int right = m_x.size() - 1;
+
+        while (right - left > 1) {
+            int mid = (left + right) / 2;
+            if (m_x[mid] <= x)
+                left = mid;
+            else
+                right = mid;
+        }
+
+        // Return closest index
+        if (std::abs(m_x[left] - x) < std::abs(m_x[right] - x))
+            return left;
+        else
+            return right;
     }
 
     inline double Step() const

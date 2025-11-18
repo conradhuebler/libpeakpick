@@ -27,15 +27,16 @@
 ```
 libpeakpick/
 ├── libpeakpick/           # Header-only library files (main implementation)
-│   ├── analyse.h          # Analysis algorithms
-│   ├── baseline.h         # Baseline correction methods
+│   ├── analyse.h          # Analysis algorithms (IMPROVED)
+│   ├── advanced.h         # Advanced algorithms (NEW: AsLS, prominence, splines)
+│   ├── baseline.h         # Baseline correction methods (IMPROVED)
 │   ├── deconvulate.h      # Deconvolution algorithms
 │   ├── glfit.h            # Gaussian/Lorentzian fitting
 │   ├── mathhelper.h       # Mathematical utilities
 │   ├── nxlinregress.h     # N-dimensional linear regression
 │   ├── peakpick.h         # Main header with file loading utilities
 │   ├── savitzky.h         # Savitzky-Golay filter implementation
-│   ├── spectrum.h         # Core spectrum class and operations
+│   ├── spectrum.h         # Core spectrum class and operations (IMPROVED)
 │   └── utilities.h        # Utility functions (save, SNR, FWHM, etc.)
 ├── tests/                 # Unit tests (CMake/CTest based)
 │   ├── CMakeLists.txt     # Test build configuration
@@ -45,7 +46,8 @@ libpeakpick/
 │   ├── test_baseline.cpp  # Baseline correction tests
 │   ├── test_savitzky.cpp  # Savitzky-Golay filter tests
 │   ├── test_peakpick.cpp  # File I/O tests
-│   └── test_integration.cpp # Integration tests
+│   ├── test_integration.cpp # Integration tests
+│   └── test_advanced.cpp  # Tests for advanced algorithms (NEW)
 ├── src/                   # Test/example source files
 │   ├── testLorentzian.h
 │   └── testLorentzian.cpp
@@ -132,6 +134,105 @@ The test suite includes:
 - **test_savitzky**: Tests for Savitzky-Golay filter coefficients
 - **test_peakpick**: Tests for file I/O operations
 - **test_integration**: End-to-end integration tests for complete workflows
+- **test_advanced**: Tests for advanced algorithms (prominence, AsLS, splines, noise estimation)
+
+## Recent Improvements (2024)
+
+### Critical Bug Fixes
+
+**⚠️ IMPORTANT**: The following critical bugs have been fixed. These are **drop-in replacements** - your existing code should work without changes, but verify behavior with your datasets:
+
+1. **XtoIndex() - spectrum.h** (FIXED)
+   - **Problem**: Buggy while-loop and incorrect index modification caused wrong results
+   - **Fix**: Complete rewrite with proper bounds checking and binary search fallback
+   - **Runtime Notice**: No warnings - fully backward compatible
+   - **Action**: **Test your code** that uses `XtoIndex()` or `Y(double x)` to ensure results match expectations
+
+2. **SmoothFunction() - analyse.h** (FIXED)
+   - **Problem**: Lost boundary points, started at i=1, stored at i-1
+   - **Fix**: Proper boundary handling, now processes all points including edges
+   - **Runtime Notice**: Warnings for invalid parameters (size 0, unsupported points)
+   - **Action**: **Verify smoothed spectra** - results near boundaries will be different (more accurate)
+
+3. **Normalise() - analyse.h** (FIXED)
+   - **Problem**: `min` parameter was ignored, only scaled to max
+   - **Fix**: Now properly normalizes to [min, max] range
+   - **Runtime Notice**: Warning if spectrum has no range (max == min)
+   - **Action**: **Check normalization** - if you relied on old behavior, update `min` parameter
+
+4. **FitBaseLine() - baseline.h** (FIXED)
+   - **Problem**: Used Qt type `qreal`, incomplete convergence check
+   - **Fix**: Proper convergence criteria and divergence detection
+   - **Runtime Notice**: Warnings for optimization failures
+   - **Action**: **Monitor baseline fits** - may converge differently
+
+### New Advanced Algorithms (advanced.h)
+
+Include `#include "libpeakpick/advanced.h"` to access these:
+
+1. **PickPeaksAdvanced()** - Improved peak detection with prominence filtering
+   ```cpp
+   std::vector<Peak> PickPeaksAdvanced(const spectrum* spec,
+       double threshold,
+       double min_prominence = 0.0,  // NEW: Filter by prominence
+       unsigned int min_distance = 1, // NEW: Minimum distance between peaks
+       unsigned int start = 0,
+       unsigned int end = 0);
+   ```
+   - Filters noise better than original `PickPeaks()`
+   - Runtime message shows number of peaks found with prominence threshold
+
+2. **BaselineAsLS()** - Asymmetric Least Squares baseline correction
+   ```cpp
+   spectrum BaselineAsLS(const spectrum& spec,
+       double lambda = 1e6,    // Smoothness (1e2 to 1e9)
+       double p = 0.01,        // Asymmetry (0.001 to 0.1)
+       unsigned int max_iter = 10);
+   ```
+   - Modern baseline correction method
+   - Runtime messages show convergence progress
+   - Returns baseline-corrected spectrum
+
+3. **EstimateNoise()** - Robust noise estimation using MAD
+   ```cpp
+   double EstimateNoise(const spectrum& spec);
+   ```
+   - Uses Median Absolute Deviation for robust noise estimation
+   - Useful for automatic threshold selection in peak picking
+
+4. **resampleCubic()** - Cubic spline interpolation
+   ```cpp
+   spectrum resampleCubic(const spectrum& spec, const Vector& new_x);
+   ```
+   - Higher quality than linear interpolation (utilities.h)
+   - Smoother interpolation for plotting and analysis
+
+5. **CalculatePeakProminence()** - Peak prominence calculation
+   ```cpp
+   double CalculatePeakProminence(const spectrum* spec, unsigned int peak_idx);
+   ```
+   - Measures how much a peak stands out from surroundings
+   - Used internally by PickPeaksAdvanced()
+
+### Migration Guide for Existing Code
+
+**No changes required** for basic functionality - all fixes are drop-in replacements. However:
+
+1. **Verify Results**: Run your analysis pipelines and compare results
+2. **Update Tests**: If you have unit tests, some values may differ slightly
+3. **Check Warnings**: Runtime warnings indicate potential issues
+4. **Consider New Methods**: `PickPeaksAdvanced()` and `BaselineAsLS()` may improve results
+
+**Example: Migrating to advanced peak detection**
+```cpp
+// Old code (still works)
+std::vector<Peak> peaks = PickPeaks(&spec, threshold);
+
+// New code (better noise rejection)
+std::vector<Peak> peaks = PickPeaksAdvanced(&spec, threshold,
+    0.5,  // min_prominence - adjust for your data
+    5);   // min_distance - minimum 5 points between peaks
+```
 
 ## Code Conventions
 

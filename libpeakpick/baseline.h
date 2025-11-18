@@ -106,15 +106,28 @@ inline Vector FitBaseLine(const Vector& x, const Vector& y, unsigned int size, d
     Eigen::LevenbergMarquardt<Eigen::NumericalDiff<BaseLineFitFunction>> lm(numDiff);
     Eigen::LevenbergMarquardtSpace::Status status = lm.minimizeInit(parameter);
 
-    qreal diff = 1;
+    double diff = 1.0;
+    const unsigned int max_iterations = 100;
+    const double tolerance = 1e-5;
 
-    for (unsigned int iter = 0; iter < 100 && diff > 1e-5; ++iter) {
-
+    for (unsigned int iter = 0; iter < max_iterations && diff > tolerance; ++iter) {
         Vector param = parameter;
         status = lm.minimizeOneStep(parameter);
-        for (unsigned int i = 0; i < size; ++i)
-            diff += (parameter(i) - param(i)) * (parameter(i) - param(i));
+
+        // Calculate parameter change
+        diff = 0.0;
+        for (unsigned int i = 0; i < size; ++i) {
+            double delta = parameter(i) - param(i);
+            diff += delta * delta;
+        }
         diff = sqrt(diff);
+
+        // Check for divergence
+        if (status == Eigen::LevenbergMarquardtSpace::ImproperInputParameters ||
+            status == Eigen::LevenbergMarquardtSpace::TooManyFunctionEvaluation) {
+            std::cerr << "Warning: FitBaseLine - optimization failed at iteration " << iter << std::endl;
+            break;
+        }
     }
 
     return parameter;

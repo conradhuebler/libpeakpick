@@ -60,32 +60,67 @@ struct Peak {
 
 inline void Normalise(spectrum* spec, double min = 0.0, double max = 1.0)
 {
-    (void)min;
+    double minimum = spec->Min();
     double maximum = spec->Max();
 
+    if (maximum == minimum) {
+        std::cerr << "Warning: Normalise - spectrum has no range (max == min)" << std::endl;
+        return;
+    }
+
 #pragma omp parallel for
-    for (unsigned int i = 0; i < spec->size(); ++i)
-        spec->setY(i, spec->Y(i) / maximum * max);
+    for (unsigned int i = 0; i < spec->size(); ++i) {
+        // Normalize to [0, 1] first
+        double normalized = (spec->Y(i) - minimum) / (maximum - minimum);
+        // Scale to [min, max]
+        spec->setY(i, normalized * (max - min) + min);
+    }
 
     spec->Analyse();
 }
 
 inline void SmoothFunction(spectrum* spec, unsigned int points)
 {
-    double val = 0;
-    Vector vector(spec->size());
-    double norm = SavitzkyGolayNorm(points);
-    // #pragma omp parallel for
-    for (unsigned int i = 1; i < spec->size(); ++i) {
-        val = 0;
-        for (unsigned int j = 0; j < points; ++j) {
-            double coeff = SavitzkyGolayCoefficient(points, j);
-            val += coeff * spec->Y(i + j) / norm;
-            if (j)
-                val += coeff * spec->Y(i - j) / norm;
-        }
-        vector(i - 1) = val;
+    if (spec->size() == 0 || points == 0) {
+        std::cerr << "Warning: SmoothFunction called with invalid parameters" << std::endl;
+        return;
     }
+
+    double norm = SavitzkyGolayNorm(points);
+    if (norm == 0.0) {
+        std::cerr << "Warning: SmoothFunction - unsupported number of points: " << points << std::endl;
+        return;
+    }
+
+    Vector vector(spec->size());
+
+    // Apply smoothing with proper boundary handling
+#pragma omp parallel for
+    for (unsigned int i = 0; i < spec->size(); ++i) {
+        double val = 0;
+
+        // Center point
+        double coeff = SavitzkyGolayCoefficient(points, 0);
+        val += coeff * spec->Y(i);
+
+        // Symmetric neighbors
+        for (unsigned int j = 1; j < points; ++j) {
+            coeff = SavitzkyGolayCoefficient(points, j);
+
+            // Left neighbor (if exists)
+            if (i >= j) {
+                val += coeff * spec->Y(i - j);
+            }
+
+            // Right neighbor (if exists)
+            if (i + j < spec->size()) {
+                val += coeff * spec->Y(i + j);
+            }
+        }
+
+        vector(i) = val / norm;
+    }
+
     spec->setSpectrum(vector);
 }
 
