@@ -312,8 +312,11 @@ public:
         return m_y[m_y.size() - 1];
     }
 
-    inline Vector x() const { return m_x; }
-    inline Vector y() const { return m_y; }
+    /* By reference, not by value: a by-value return deep-copies the whole spectrum on every access,
+     * which is ruinous where these are read per sample (see PeakPick::IntegrateNumerical). Callers
+     * that want their own copy still get one from `Vector v = spec.x();`. */
+    inline const Vector& x() const { return m_x; }
+    inline const Vector& y() const { return m_y; }
 
 private:
     Vector m_x, m_y;

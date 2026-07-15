@@ -235,14 +235,17 @@ inline double IntegrateNumerical(const spectrum* spec, unsigned int start, unsig
     if (end > spec->size() || spec->size() < start)
         return 0;
 
+    const Vector& xs = spec->x();
+    const Vector& ys = spec->y();
+
     double integ = 0;
 #pragma omp parallel for reduction(+ \
                                    : integ)
     for (unsigned int i = start; i < end - 1; ++i) {
-        double x_0 = spec->X(i);
-        double x_1 = spec->X(i + 1);
-        double y_0 = spec->Y(i) - offset;
-        double y_1 = spec->Y(i + 1) - offset;
+        double x_0 = xs[i];
+        double x_1 = xs[i + 1];
+        double y_0 = ys[i] - offset;
+        double y_1 = ys[i + 1] - offset;
         if (std::abs(y_0) < std::abs(y_1))
             integ += (x_1 - x_0) * y_0 + (x_1 - x_0) * (y_1 - y_0) / 2.0;
         else
@@ -261,16 +264,19 @@ inline double IntegrateNumerical(const spectrum* spec, unsigned int start, unsig
     if (end > spec->size() || spec->size() < start)
         return 0;
 
+    const Vector& xs = spec->x();
+    const Vector& ys = spec->y();
+
     double integ = 0;
 #pragma omp parallel for reduction(+ \
                                    : integ)
     for (unsigned int i = start; i < end - 1; ++i) {
-        double x_0 = spec->X(i);
-        double x_1 = spec->X(i + 1);
+        double x_0 = xs[i];
+        double x_1 = xs[i + 1];
         double offset_0 = Polynomial(x_0, coeff);
         double offset_1 = Polynomial(x_1, coeff);
-        double y_0 = spec->Y(i) - offset_0;
-        double y_1 = spec->Y(i + 1) - offset_1;
+        double y_0 = ys[i] - offset_0;
+        double y_1 = ys[i + 1] - offset_1;
         if (std::abs(y_0) < std::abs(y_1))
             integ += (x_1 - x_0) * y_0 + (x_1 - x_0) * (y_1 - y_0) / 2.0;
         else
