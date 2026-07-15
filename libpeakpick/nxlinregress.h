@@ -29,7 +29,7 @@ namespace PeakPick {
 
 struct MultiRegression {
     std::vector<LinearRegression> regressions;
-    qreal sum_err = 0;
+    double sum_err = 0;
     std::vector<int> start;
 };
 
@@ -53,6 +53,13 @@ public:
                 if (initial[i - 1] < m_end[i - 1]) {
                     initial[i - 1]++;
                     for (unsigned int j = i; j < m_end.size(); ++j) {
+                        /* FIXME: this assigns [i] on every pass instead of [j], so for 4+ functions
+                         * the entries above i keep their old (maxed) values and the vector goes
+                         * non-monotonic, which is what makes segments come out empty. Left as-is
+                         * deliberately: correcting it makes whole families of splits valid that are
+                         * currently discarded, which changes results for 4+ functions (reachable
+                         * from the regression analysis dialog). That needs to be a separate,
+                         * measured change - it is not a no-op cleanup. */
                         initial[i] = initial[i - 1] + 2;
                     }
                     m_value = initial;
@@ -89,6 +96,13 @@ inline std::map<double, MultiRegression> LeastSquares(const Vector& x, const Vec
         reg.start.push_back(x.size() - 1);
         regressions[reg.sum_err] = reg;
     } else {
+        /* The segment starts are staggered 0, 2, 4, ... 2*(functions-1) and the ends mirror them
+         * from the far side. With fewer points than that span, the starts run past the data and the
+         * ends go negative, so the segment loop below indexes x[j] out of bounds. There is no way to
+         * place this many lines on this few points anyway - report no fit. */
+        if (x.size() < 2 * static_cast<int>(functions - 1))
+            return regressions;
+
         std::vector<int> starts, ends;
         for (unsigned int i = 0; i < functions; i++) {
             int start = 2 * i;
@@ -102,7 +116,7 @@ inline std::map<double, MultiRegression> LeastSquares(const Vector& x, const Vec
             if (vector.Value()[0] != 0)
                 break;
             MultiRegression reg;
-            qreal sum = 0;
+            double sum = 0;
             std::vector<int> work = vector.Value();
             work.push_back(x.size());
             bool valid = true;
@@ -115,7 +129,15 @@ inline std::map<double, MultiRegression> LeastSquares(const Vector& x, const Vec
                     x_i.push_back(x[j]);
                     y_i.push_back(y[j]);
                 }
-                valid = valid && x_i.size();
+                if (x_i.empty()) {
+                    /* A split can be degenerate (work[i] >= work[i+1]): JacobVector walks the last
+                     * index up to x.size(), which leaves the final segment with no points at all.
+                     * Such a configuration is rejected below, so stop here instead of fitting an
+                     * empty segment - that fit is meaningless, and reading &x_i[0] out of an empty
+                     * vector is undefined behaviour. */
+                    valid = false;
+                    break;
+                }
                 LinearRegression regression = LeastSquares(x_i, y_i);
                 reg.regressions.push_back(regression);
 

@@ -27,7 +27,11 @@
 #include <vector>
 
 typedef Eigen::VectorXd Vector;
-static double pi = 3.14159265;
+/* constexpr, not `static double`: a mutable namespace-scope variable with internal linkage, read by
+ * an inline function with external linkage (Lorentzian below), gives every translation unit its own
+ * definition of that function - an ODR violation. Also carries full double precision now; the old
+ * literal stopped after nine digits. */
+constexpr double pi = M_PI;
 
 namespace PeakPick {
 
@@ -221,7 +225,10 @@ inline LinearRegression LeastSquares(const Vector& x, const Vector& y)
 {
     LinearRegression regression;
 
-    if (x.size() != y.size())
+    /* Nothing to fit: mismatched or empty input yields the default (all-zero) regression rather
+     * than dividing by n = 0. This is the function's contract, so every path below may assume
+     * n >= 1. */
+    if (x.size() != y.size() || x.size() == 0)
         return regression;
     // http://www.bragitoff.com/2015/09/c-program-to-linear-fit-the-data-using-least-squares-method/ //
     double xsum = 0, x2sum = 0, ysum = 0, xysum = 0; //variables for sums/sigma of xi,yi,xi^2,xiyi etc
@@ -258,9 +265,11 @@ inline LinearRegression LeastSquares(const Vector& x, const Vector& y)
 
 inline LinearRegression LeastSquares(const std::vector<double>& x, const std::vector<double>& y)
 {
-    Vector _x, _y;
-    _x = Vector::Map(&x[0], x.size());
-    _y = Vector::Map(&y[0], y.size());
-    return LeastSquares(_x, _y);
+    // Taking &x[0] of an empty vector is undefined, so answer the empty case up front - with the
+    // same default regression the Vector overload returns for it.
+    if (x.empty() || y.empty())
+        return LinearRegression();
+
+    return LeastSquares(Vector::Map(&x[0], x.size()), Vector::Map(&y[0], y.size()));
 }
 }

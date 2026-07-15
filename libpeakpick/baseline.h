@@ -106,7 +106,7 @@ inline Vector FitBaseLine(const Vector& x, const Vector& y, unsigned int size, d
     Eigen::LevenbergMarquardt<Eigen::NumericalDiff<BaseLineFitFunction>> lm(numDiff);
     Eigen::LevenbergMarquardtSpace::Status status = lm.minimizeInit(parameter);
 
-    qreal diff = 1;
+    double diff = 1;
 
     for (unsigned int iter = 0; iter < 100 && diff > 1e-5; ++iter) {
 
